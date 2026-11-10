@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SmartForm AutoFill</title>
+  <link rel="stylesheet" href="../styles/tokens.css" />
+  <link rel="stylesheet" href="popup.css" />
+  <script src="icons.js"></script>
+</head>
+<body>
+  <div class="app">
+  <header class="header glass-strong">
+    <div class="header-title">
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2.5 4.5 13.5h6.5l-1 8 8.5-11h-6.5l1-8Z" /></svg></span>
+      <div class="header-copy"><h1>SmartForm AutoFill</h1><div class="header-context"><button id="pageHostChip" class="host-chip" type="button" data-icon="globe" title="Target tab. Click to choose another tab when none is detected.">Finding your tab…</button><span id="envBadge" class="env-badge" data-state="unset" data-icon="info" hidden></span><span class="status-dot-host"><span id="pageStatusDot" class="status-dot" role="img" title="Blocked" aria-label="Blocked"></span><span id="pageStatusLabel">Blocked</span></span></div></div>
+    </div>
+    <div class="header-actions">
+      <button id="themeToggle" class="icon-btn theme-toggle" type="button" aria-label="Theme: system. Switch to light theme" title="Theme: system"><span id="themeModeIcon" class="theme-icon" data-icon="monitor" aria-hidden="true"></span></button>
+      <button id="helpBtn" class="icon-btn" type="button" aria-label="Help and shortcuts" title="Help (?)" aria-keyshortcuts="Shift+?" data-icon="help"></button>
+      <button id="openOptions" class="icon-btn" type="button" aria-label="Open settings" title="Settings" data-icon="settings"></button>
+    </div>
+  </header>
+
+  <main class="content app-scroll">
+    <div class="app-inner">
+    <div id="extensionContextBanner" class="extension-context-banner glass-status hidden" role="status" aria-live="polite">
+      <div class="banner-copy"><span class="status-icon" data-icon="info" aria-hidden="true"></span><span id="extensionContextMessage">Open a regular web page, then reopen this panel.</span></div>
+      <div class="banner-actions">
+        <button id="openSidePanelBanner" class="btn btn-small" type="button" data-icon="panel">Open in side panel</button>
+        <button id="grantAccessBanner" class="btn btn-small btn-primary" type="button" data-icon="lock" hidden>Allow access</button>
+        <button id="selectTabBanner" class="btn btn-small btn-primary" type="button">Choose tab</button>
+        <a id="manageExtensionBanner" class="btn btn-small" href="chrome://extensions" target="_blank" rel="noreferrer">Manage extension</a>
+      </div>
+      <details id="targetTabPickerDetails" class="target-tab-picker-details" hidden>
+        <summary>Select a tab</summary>
+        <label id="targetTabPickerLabel" class="field target-tab-picker"><span class="visually-hidden">Select a regular page tab</span><select id="targetTabPicker"><option value="" disabled selected>Choose a tab…</option></select></label>
+      </details>
+    </div>
+
+    <nav class="section-tabs" role="tablist" aria-label="Extension sections">
+      <button id="tabTestButton" class="section-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="tabTest" data-icon="zap">Test</button>
+      <button id="tabOutputButton" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="tabOutput" tabindex="-1" data-icon="layers">Output</button>
+      <button id="tabSetupButton" class="section-tab" type="button" role="tab" aria-selected="false" aria-controls="tabSetup" tabindex="-1" data-icon="settings">Setup</button>
+      <span class="tab-indicator" aria-hidden="true"></span>
+    </nav>
+
+    <div id="tabTest" class="tab-panel" role="tabpanel" aria-labelledby="tabTestButton" tabindex="0">
+    <section id="welcomeCard" class="card welcome-card" aria-labelledby="welcomeTitle" hidden>
+      <div class="welcome-head">
+        <span class="card-icon welcome-icon" data-icon="sparkles" aria-hidden="true"></span>
+        <div><h2 id="welcomeTitle">Welcome to SmartForm AutoFill</h2><p>Fill web forms with realistic <strong>fake</strong> test data in one click.</p></div>
+      </div>
+      <ol class="welcome-steps">
+        <li><span class="welcome-num">1</span><span><strong>Open the form</strong> you want to test in this tab.</span></li>
+        <li><span class="welcome-num">2</span><span><strong>Scan</strong> to see what can be filled <em>(optional)</em>.</span></li>
+        <li><span class="welcome-num">3</span><span>Press <strong>Fill the form</strong> at the bottom.</span></li>
+      </ol>
+      <p class="welcome-safe" data-icon="shield">Nothing is submitted unless you choose to. Use test sites, not production.</p>
+      <div class="welcome-actions">
+        <button id="welcomeDismiss" class="btn btn-small btn-primary" type="button" data-icon="check">Got it</button>
+        <button id="welcomeHelp" class="btn btn-small btn-ghost" type="button" data-icon="help">How it works</button>
+      </div>
+    </section>
+    <ol class="workflow-stepper" aria-label="Form workflow">
+      <li><span class="step-number" data-step="1">1</span><span><strong>Scan</strong><span id="stepperScanState" class="stepper-state">Ready</span></span></li>
+      <li><span class="step-number" data-step="2">2</span><span><strong>Fill</strong><span id="stepperFillState" class="stepper-state">Blocked</span></span></li>
+      <li><span class="step-number" data-step="3">3</span><span><strong>Submit</strong><span id="stepperSubmitState" class="stepper-state">Blocked</span></span></li>
+    </ol>
+    <section class="card review-card">
+      <div class="card-header card-heading-stack">
+        <h2><span class="step-badge">1</span>Check the page <span class="optional-tag">Optional</span></h2>
+        <p class="card-description">See which fields can be filled and spot common problems before you fill.</p>
+        <span id="scanStepState" class="workflow-state hidden" data-state="ready" hidden></span>
+        <span id="scanStepReason" class="workflow-blocked-reason hidden" hidden></span>
+      </div>
+
+      <div class="page-review-actions">
+        <button id="scanPageBtn" class="btn btn-large btn-primary" data-requires-ext data-icon="scan" title="Scan page (Alt+S)" aria-keyshortcuts="Alt+S">Scan page</button>
+        <button id="securityScanBtn" class="btn btn-large btn-secondary" data-requires-ext data-icon="shield">Security scan</button>
+      </div>
+      <div id="scanResult" class="fill-result hidden"></div>
+      <div id="securityScanActions" class="export-row hidden">
+        <button id="copySecurityScanBtn" class="btn btn-small" type="button" data-icon="copy">Copy report</button>
+      </div>
+    </section>
+
+    <section class="card fill-form-card" aria-labelledby="fillFormHeading">
+      <div class="fill-section-header">
+        <h2 id="fillFormHeading" class="fill-form-heading">
+          <span class="step-badge" aria-hidden="true">2</span>
+          <span class="fill-heading-text">Fill the form</span>
+          <span id="fillStepState" class="workflow-state hidden" data-state="blocked" hidden></span>
+        </h2>
+        <span id="fillStepReason" class="workflow-blocked-reason">Scan the page first</span>
+      </div>
+
+      <div class="testing-mode-panel">
+        <div class="testing-mode-header">
+          <span class="testing-mode-label">What kind of data?</span>
+          <button class="help-tip" type="button" aria-label="Help: testing modes and field scope" aria-describedby="modeHelpTooltip">i</button><span id="modeHelpTooltip" class="help-tooltip" role="tooltip">Required uses native required or aria-required; optional has no required marker.</span>
+        </div>
+        <fieldset class="mode-selector" id="modeSelector" aria-labelledby="testingModeLabel">
+          <legend id="testingModeLabel" class="visually-hidden">Choose a fill mode</legend>
+          <label class="mode-option">
+            <input type="radio" name="qaMode" value="normal" checked />
+            <svg class="mode-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3 5 13.5h6L10 21l8-10.5h-6L13 3Z"/></svg>
+            <span class="mode-copy"><span class="mode-name">Quick fill</span><span class="mode-summary">Realistic fake data in every field. Best place to start.</span></span>
+          </label>
+          <label class="mode-option">
+            <input type="radio" name="qaMode" value="positive" />
+            <svg class="mode-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>
+            <span class="mode-copy"><span class="mode-name">Valid data</span><span class="mode-summary">Correct values in the fields you pick, to confirm the form accepts them</span></span>
+          </label>
+          <label class="mode-option">
+            <input type="radio" name="qaMode" value="negative" />
+            <svg class="mode-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5.5 9.2A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.8L14 9V3M7.5 15h9"/></svg>
+            <span class="mode-copy"><span class="mode-name">Wrong data <span class="mode-warning">Invalid</span></span><span class="mode-summary">Bad values, to check the form shows helpful errors</span></span>
+          </label>
+          <label class="mode-option">
+            <input type="radio" name="qaMode" value="boundary" />
+            <svg class="mode-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="1.5"/><path d="M7 7v4M11 7v3M15 7v4M19 7v3"/></svg>
+            <span class="mode-copy"><span class="mode-name">Edge cases <span class="mode-warning">Limits</span></span><span class="mode-summary">Very short, very long and min/max values</span></span>
+          </label>
+        </fieldset>
+        <button id="fullQaModeButton" class="full-qa-choice" type="button" aria-pressed="false" data-icon="gauge"><span class="full-qa-text"><span class="full-qa-title">Full QA run</span><span class="full-qa-sub">Tries valid, wrong and edge-case data, then downloads a report</span></span></button>
+        <div id="modeDescription" class="mode-description" role="status" aria-live="polite">Fill detected fields with valid synthetic test data.</div>
+
+        <div id="qaFieldScope" class="qa-field-scope hidden">
+          <span class="field-scope-label">Which fields?</span>
+          <label class="checkbox-row"><input id="includeRequiredFields" type="checkbox" checked /> Required fields</label>
+          <label class="checkbox-row"><input id="includeOptionalFields" type="checkbox" checked /> Optional fields</label>
+          <div id="qaOneByOne" class="qa-one-by-one" hidden>
+            <label class="field qa-inline-field"><span>How to test</span>
+              <select id="qaTestStyle">
+                <option value="one" selected>One field at a time (others get correct values)</option>
+                <option value="all">All fields together</option>
+              </select>
+            </label>
+            <label class="field qa-inline-field"><span>Field</span>
+              <select id="qaTargetField"><option value="">All fields</option></select>
+            </label>
+            <label class="checkbox-row qa-click-submit"><input id="qaClickSubmit" type="checkbox" /> Click Save / Submit after each wrong value (shows errors that appear only on save)</label>
+            <p class="scan-detail-note qa-click-submit-note">Only for values the form should refuse. If the form wrongly accepts one, it may really save it — use a test site.</p>
+          </div>
+        </div>
+
+        <div id="fullQaOptions" class="fullqa-options hidden">
+          <div class="fullqa-submit-hint">Runs Positive, Negative, then Boundary cases. Submission stays off unless explicitly enabled below.</div>
+          <label class="checkbox-row"><input id="fullQaSubmitToggle" type="checkbox" /> Submit once after QA and capture the page response (irreversible site action)</label>
+          <button class="help-tip fullqa-help" type="button" title="Full QA runs Positive, Negative, and Boundary cases without submitting or advancing. Native field values are restored after each case; custom widgets may be skipped. File fields are tested only with mapped files in Positive mode because browsers cannot restore an arbitrary FileList." aria-label="Help: isolated Full QA behavior">i</button>
+        </div>
+      </div>
+
+      <details id="filesDetails" class="fill-form-nested-files">
+        <summary class="files-summary"><span data-icon="upload" aria-hidden="true"></span><span class="files-summary-title">Upload fields <span class="optional-tag">Optional</span></span><span id="autoMappingBadge" class="auto-mapping-warning" hidden>Auto-map on</span></summary>
+        <div class="card-header nested-file-header">
+          <p class="file-hint">Only needed if the form asks you to upload a document or photo.</p>
+          <button id="addFileBtn" class="btn btn-small" data-icon="plus">Add file</button>
+        </div>
+        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" multiple hidden />
+        <div class="hint-row"><span class="file-hint">Add a file, then choose which kind of upload it is for (photo, ID, address proof…).</span><button class="help-tip" type="button" aria-label="Help: adding test files for the fill flow" aria-describedby="fileHelpTooltip">i</button><span id="fileHelpTooltip" class="help-tooltip" role="tooltip">Map by document type. Add supported files, then map each file to its matching upload field.</span></div>
+
+        <ul id="fileList" class="file-list">
+          <li class="empty-state" data-icon="upload">No files stored. Add a test file if this page has an upload field.</li>
+        </ul>
+        <div id="autoMappingPreview" class="auto-mapping-preview" hidden></div>
+        <div class="file-list-footer">
+          <span id="fileCount"></span>
+          <span class="tag-legend"></span>
+        </div>
+      </details>
+
+      <div id="progressWrap" class="progress-wrap hidden">
+        <div class="progress-meta"><span id="progressActivity">Preparing run</span><span id="progressPercent">0%</span></div>
+        <div id="fillProgressbar" class="progress-bar-bg" role="progressbar" aria-label="Form fill progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progressBar" class="progress-bar-fill"></div></div>
+        <div id="progressLabel" class="progress-label">0 / 0 fields completed</div>
+        <div id="fillPhase" class="fill-phase hidden" aria-live="polite"><span>Full QA phase</span><strong id="fillPhaseLabel">Analyzing</strong></div>
+      </div>
+
+      <div id="fillStatus" class="fill-status hidden" role="status" aria-live="polite"></div>
+      <div id="dynamicFieldNotice" class="hint-row file-hint hidden" aria-live="polite"></div>
+      <div id="fillResult" class="fill-result hidden" aria-live="polite"></div>
+
+    </section>
+
+    <details id="actionDetails" class="card action-card collapsible-card">
+      <summary class="card-header collapsible-summary">
+        <h2><span class="step-badge">3</span>Submit, save or go next <span class="optional-tag">Optional</span></h2>
+        <span id="actionStepState" class="workflow-state" data-state="blocked"><span class="badge" data-icon="lock">Blocked</span></span>
+        <span id="actionButtonCount" class="action-count">Not scanned</span>
+      </summary>
+      <div class="action-body">
+      <p class="card-description">Let the extension press the page's Submit, Save or Next button for you. It shows what it would click first.</p>
+      <div class="page-review-actions">
+        <button id="scanActionButtonsBtn" class="btn btn-large btn-secondary" data-requires-ext data-icon="target">Find page actions</button>
+        <button id="pickElementBtn" class="btn btn-large btn-secondary" data-requires-ext data-icon="pointer">Pick element</button>
+      </div>
+      <div class="hint-row"><span class="file-hint">Delete, Cancel, Log out and Pay buttons are always skipped.</span><button class="help-tip" type="button" title="Pick a page control directly, review matching elements, then run or stop the sequence." aria-label="Help: element picker and safe page actions">i</button></div>
+      <div id="actionButtonPreview" class="action-preview hidden"></div>
+      <section id="pickedElementCard" class="picked-card" aria-live="polite" aria-labelledby="pickedElementTitle" hidden></section>
+
+      <div class="action-controls">
+        <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="actionDryRunToggle" checked /> Preview only (don’t actually click)</label>
+        <details class="action-advanced"><summary>Advanced action settings</summary>
+          <label class="checkbox-row action-delay-row">
+            <input type="checkbox" id="bulkSaveModeToggle" />
+            Pause when 100 or more matching actions are found
+          </label>
+          <div class="file-hint action-delay-hint">Use this for large Save-action sets to reduce rapid repeated clicks.</div>
+          <label class="action-delay-setting">
+            Pause between repeated clicks
+            <select id="saveDelaySelect" disabled>
+              <option value="1000" selected>1 second</option>
+              <option value="2000">2 seconds</option>
+              <option value="3000">3 seconds</option>
+              <option value="5000">5 seconds</option>
+              <option value="10000">10 seconds</option>
+            </select>
+          </label>
+        </details>
+      </div>
+      <button id="pageActionBtn" class="btn btn-primary btn-large" disabled data-icon="play">Submit / Save / Next</button>
+      <div id="pageActionHelper" class="btn-hint page-action-helper">Enabled after “Find page actions” or “Pick element”.</div>
+      <button id="stopPageActionBtn" class="btn btn-warn-outline btn-large hidden" data-icon="stop">Stop action</button>
+      <div id="pageActionResult" class="fill-result hidden"></div>
+      </div>
+    </details>
+
+    </div>
+
+    <div id="tabOutput" class="tab-panel" role="tabpanel" aria-labelledby="tabOutputButton" tabindex="0" hidden>
+    <section class="card dashboard-card" aria-labelledby="dashboardTitle">
+      <div class="card-header"><h2 id="dashboardTitle"><span class="card-icon" data-icon="gauge" aria-hidden="true"></span>QA summary</h2><span class="action-count">This session</span></div>
+      <div class="qa-empty-state" data-icon="inbox"><span>No results yet. Scan or fill a page to see a summary here.</span><button id="goToTestBtn" class="btn btn-small btn-primary empty-cta" type="button" data-icon="zap">Go to Test</button></div>
+      <div id="qaResultBar" class="qa-result-bar" role="img" aria-label="Pass, skipped and failed proportion: no data"><span class="bar-pass"></span><span class="bar-warn"></span><span class="bar-fail"></span></div>
+      <div class="qa-dashboard-grid qa-primary-grid">
+        <div><span>Passed</span><strong data-dashboard="passed">—</strong></div>
+        <div><span>Failed</span><strong data-dashboard="failed">—</strong></div>
+        <div><span>Skipped</span><strong data-dashboard="skipped">—</strong></div>
+      </div>
+      <details class="qa-more-metrics"><summary>More metrics</summary><div class="qa-dashboard-grid qa-secondary-grid">
+        <div><span>Fields</span><strong data-dashboard="fields">—</strong></div>
+        <div><span>Issues</span><strong data-dashboard="issues">—</strong></div>
+        <div><span>Score</span><strong data-dashboard="score">—</strong></div>
+        <div><span>Accessibility</span><strong data-dashboard="accessibility">—</strong></div>
+        <div><span>Console errors</span><strong data-dashboard="console">—</strong></div>
+        <div><span>Failed requests</span><strong data-dashboard="network">—</strong></div>
+        <div class="duration-metric"><span>Duration</span><strong data-dashboard="duration">—</strong></div>
+      </div></details>
+      <div id="summaryError" class="summary-error hidden" role="alert" hidden></div>
+      <div id="summaryDebug" class="summary-debug hidden" aria-live="polite"></div>
+      <div id="targetTab" class="target-tab">Target: No page selected</div>
+    </section>
+    <section class="card">
+      <div class="card-header">
+        <h2><span class="card-icon" data-icon="list" aria-hidden="true"></span>Test cases</h2>
+      </div>
+      <p class="card-description">Generate suggested cases from the page structure, review them, then export.</p>
+      <div class="export-area">
+        <button id="generateTestCasesBtn" class="btn btn-large" data-requires-ext data-icon="sparkles">Generate test cases</button>
+      </div>
+      <div id="testCaseResult" class="fill-result hidden"></div>
+      <div id="testCaseExportRow" class="export-area hidden">
+        <div class="split-button">
+          <button id="exportTcCsvBtn" class="btn btn-small btn-primary" type="button" data-icon="download">Export CSV</button>
+          <button id="exportMenuToggle" class="btn btn-small btn-primary split-toggle" type="button" aria-expanded="false" aria-controls="exportMenu" aria-label="More export formats" data-icon="chevronDown"></button>
+        </div>
+        <div id="exportMenu" class="export-menu" hidden>
+          <button id="exportTcMdBtn" class="btn btn-small" type="button" data-icon="fileText">Markdown</button>
+          <button id="exportTcHtmlBtn" class="btn btn-small" type="button" data-icon="file">HTML report</button>
+          <button id="printTcBtn" class="btn btn-small" type="button" data-icon="printer">Print / save as PDF</button>
+          <button id="exportTcJsBtn" class="btn btn-small" type="button" data-icon="code">Playwright JS</button>
+          <button id="exportTcTsBtn" class="btn btn-small" type="button" data-icon="code">Playwright TS</button>
+          <button id="exportTcPyBtn" class="btn btn-small" type="button" data-icon="code">Playwright Python</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <h2><span class="card-icon" data-icon="camera" aria-hidden="true"></span>Reports</h2>
+        <span class="badge chromium-only" data-icon="info">Chrome / Edge only</span>
+      </div>
+      <div class="report-option"><strong>Page evidence (PNG)</strong><p>Full-page screenshot with console and network summaries.</p><button id="captureReportBtn" class="btn btn-large" data-requires-ext data-icon="camera">Capture page evidence (PNG)</button></div>
+      <div class="report-option"><strong>Full QA report (JSON / HTML)</strong><p>Choose the Full QA run mode on the Test tab; both formats download when it finishes.</p></div>
+      <div class="hint-row"><span class="file-hint">Chrome may show its debugger notice during capture.</span><button class="help-tip" type="button" title="The screenshot includes console/network summaries. Chrome shows its standard debugger banner during capture; use Stop Capturing to detach." aria-label="Help: page evidence">i</button></div>
+
+      <div id="captureStatusRow" class="capture-status-row hidden">
+        <span class="capture-status-text"><span class="capture-status-dot"></span>Debugger is attached for this tab</span>
+        <button id="stopCaptureBtn" class="btn btn-small btn-warn-outline" data-icon="stop">Stop capturing</button>
+      </div>
+    </section>
+
+    </div>
+
+    <div id="tabSetup" class="tab-panel" role="tabpanel" aria-labelledby="tabSetupButton" tabindex="0" hidden>
+    <details class="card collapsible-card" open>
+      <summary class="card-header collapsible-summary"><span class="card-icon" data-icon="settings" aria-hidden="true"></span><h2>Settings</h2></summary>
+      <div class="setting-group">
+        <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="freshDataToggle" checked /> Generate fresh data every run</label>
+        <div class="setting-helper">Create a new synthetic dataset for each fill.</div>
+        <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="captureActivityToggle" /> Capture activity during fill</label>
+        <div class="setting-helper">Include console and network activity in a later report.</div>
+        <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="autoFileMappingToggle" /> Automatic file mapping</label>
+        <div class="setting-helper">Suggest mappings only for empty categories; you confirm before they are saved.</div>
+        <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="reuseMappedFileToggle" /> Reuse one mapped file across fields</label>
+        <div class="setting-helper">Off by default. When on, the same mapped file may be attached to each matching field.</div>
+        <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="redactPathsToggle" checked /> Redact local paths in reports</label>
+        <div class="setting-helper">Hide local user folders and extension IDs in captured report text.</div>
+        <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="reduceEffectsToggle" /> Reduce visual effects</label>
+        <div class="setting-helper">Turns off blur and transparency. Faster on older computers.</div>
+      </div>
+      <div class="setting-helper security-warning">Stored files, credentials, and settings are not encrypted by the extension. Use synthetic test data only and clear it when no longer needed.</div>
+      <div id="captureUnsupportedHint" class="hint-row file-hint hidden"><span>Capture is unavailable in this browser.</span><button class="help-tip" type="button" title="Screenshot and network emulation use Chromium DevTools Protocol, which Firefox does not provide. Form filling and file mapping remain available." aria-label="Why capture is unavailable">i</button></div>
+      <div class="settings-link">
+        <a href="#" id="advancedSettingsLink">Advanced settings &amp; file mappings →</a>
+      </div>
+    </details>
+
+    <details id="generatedDataDetails" class="card collapsible-card">
+      <summary class="card-header collapsible-summary"><span class="card-icon" data-icon="database" aria-hidden="true"></span><h2>Generated data</h2><span id="toggleDataView" class="summary-action">View data</span></summary>
+      <div id="dataView" class="data-view hidden">
+        <div class="data-view-title">New synthetic test data</div>
+        <p class="file-hint">Generated and imported sample values are for authorized testing. They are not verified real credentials, identities, accounts, or production data.</p>
+        <div class="empty-state-panel" data-icon="database">No generated data yet. Fill a form to create synthetic sample data.</div>
+        <dl id="dataList" class="data-list"></dl>
+        <div class="export-row">
+          <button id="copyDataBtn" class="btn btn-small" data-icon="copy">Copy</button>
+          <button id="exportJsonBtn" class="btn btn-small" data-icon="download">Export JSON</button>
+          <button id="exportCsvBtn" class="btn btn-small" data-icon="download">Export CSV</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="card collapsible-card">
+      <summary class="card-header collapsible-summary">
+        <span class="card-icon" data-icon="activity" aria-hidden="true"></span>
+        <h2>Activity log</h2>
+        <span id="toggleLogView" class="summary-action">View logs</span>
+      </summary>
+      <div id="logView" class="log-view hidden">
+        <button id="clearLogBtn" class="btn btn-small btn-ghost" type="button" data-icon="trash">Clear</button>
+        <ul id="logList" class="log-list">
+          <li class="empty-state" data-icon="activity">No activity yet. Scan or fill a page to record activity.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="card advanced-module">
+      <summary class="advanced-module-summary"><span class="card-icon" data-icon="sparkles" aria-hidden="true"></span><span>AI QA assistant</span><span class="section-meta">Optional</span></summary>
+      <label class="field"><span>OpenAI-compatible endpoint</span><input id="aiEndpoint" type="url" value="https://api.openai.com/v1/chat/completions" autocomplete="off" /></label>
+      <label class="field"><span>Model</span><input id="aiModel" type="text" placeholder="Enter provider model name" autocomplete="off" /></label>
+      <label class="field"><span>API key</span><input id="aiApiKey" type="password" autocomplete="off" /></label>
+      <div class="setting-group">
+        <label class="checkbox-row switch-row"><input id="aiIncludePageContext" type="checkbox" class="switch" role="switch" /> Include page structure (no field values)</label>
+        <label class="checkbox-row switch-row"><input id="aiMaskPageUrl" type="checkbox" class="switch" role="switch" checked /> Mask page URL</label>
+        <label class="checkbox-row switch-row"><input id="aiMaskPageTitle" type="checkbox" class="switch" role="switch" checked /> Mask page title</label>
+      </div>
+      <label class="field"><span>Ask a QA question</span><textarea id="aiPrompt" rows="3" maxlength="4000" placeholder="e.g. Which validation cases are missing for this form?"></textarea></label>
+      <div class="export-row">
+        <button id="loadSecurityPromptBtn" class="btn btn-small btn-secondary" type="button" data-icon="shield">Use security-scan prompt</button>
+        <button id="copyAiResultBtn" class="btn btn-small" type="button" data-icon="copy">Copy result</button>
+      </div>
+      <button id="aiAskBtn" class="btn btn-primary btn-large" type="button" data-icon="sparkles">Ask AI</button>
+      <div id="aiResult" class="fill-result hidden" aria-live="polite"></div>
+      <details id="aiPayloadPreview" class="ai-payload-preview" hidden><summary>Exact request preview (API key hidden)</summary><pre id="aiPayloadText"></pre></details>
+      <div class="file-hint">The configured provider receives your prompt. The API key is cleared after each request.</div>
+    </details>
+
+    <details class="card advanced-module">
+      <summary class="advanced-module-summary"><span class="card-icon" data-icon="wifi" aria-hidden="true"></span><span>Network</span><span class="badge chromium-only">Chrome / Edge only</span></summary>
+      <label class="field"><span>Network profile</span>
+        <select id="networkProfile">
+          <option value="normal">Normal</option>
+          <option value="2g">2G</option>
+          <option value="slow-2g">Slow 2G</option>
+          <option value="3g">3G</option>
+          <option value="4g">4G</option>
+          <option value="fast">Fast (approximate): 20 ms / 10 Mbps down, 5 Mbps up</option>
+          <option value="slow">Slow (approximate): 400 ms / 96 kbps down, 32 kbps up</option>
+          <option value="very-slow">Very slow (approximate): 2000 ms / 6.4 kbps down and up</option>
+          <option value="offline">Offline</option>
+        </select>
+      </label>
+      <div class="export-row">
+        <button id="applyNetworkProfileBtn" class="btn btn-small btn-primary">Apply</button>
+        <button id="restoreNetworkProfileBtn" class="btn btn-small" data-icon="refresh">Restore normal</button>
+      </div>
+      <div id="networkProfileStatus" class="file-hint" aria-live="polite">Chrome / Edge only.</div>
+    </details>
+
+    <details class="card advanced-module">
+      <summary class="advanced-module-summary"><span class="card-icon" data-icon="phone" aria-hidden="true"></span><span>Viewport</span><span class="badge chromium-only">Chrome / Edge only</span></summary>
+      <label class="field"><span>Device preset</span><select id="viewportPreset" aria-describedby="viewportPresetMeta"><option value="custom">Custom size</option></select></label>
+      <div class="viewport-preset-row">
+        <span id="viewportPresetMeta" class="file-hint" aria-live="polite"></span>
+        <button id="viewportRotateBtn" class="btn btn-small" type="button" data-icon="refresh" title="Swap width and height (portrait / landscape)">Rotate</button>
+      </div>
+      <div class="viewport-size-fields">
+        <label class="field"><span>Width (px)</span><input id="viewportWidth" type="number" min="200" max="3000" step="1" value="390" /></label>
+        <label class="field"><span>Height (px)</span><input id="viewportHeight" type="number" min="200" max="3000" step="1" value="844" /></label>
+      </div>
+      <div class="export-row">
+        <button id="applyViewportBtn" class="btn btn-small btn-primary" type="button">Apply to current page</button>
+        <button id="restoreViewportBtn" class="btn btn-small" type="button" data-icon="refresh">Restore viewport</button>
+      </div>
+      <div class="file-hint">Apply a size to use the live page at that screen size. It stays applied in this tab (also after reloads and navigation) until you click Restore viewport. The screenshot below is only a preview.</div>
+      <button id="viewportPreviewBtn" class="btn btn-large" data-icon="image">Preview at this size</button>
+      <div id="viewportSupportStatus" class="file-hint" aria-live="polite">Chrome / Edge only.</div>
+      <div id="viewportPreviewResult" class="viewport-preview-result hidden">
+        <div id="viewportPreviewMeta" class="viewport-preview-meta"></div>
+        <div class="viewport-preview-scroll">
+          <img id="viewportPreviewImage" class="viewport-preview-image" alt="Full-page viewport preview. Activate to zoom." role="button" tabindex="0" />
+        </div>
+        <p id="viewportPreviewStatus" class="scan-detail-note" role="status" aria-live="polite"></p>
+        <button id="viewportOpenWindowBtn" class="btn btn-small" type="button" hidden data-icon="external">Open page in a resized window</button>
+        <dialog id="viewportZoomDialog" class="viewport-zoom-dialog" aria-label="Zoomed full-page preview">
+          <div class="viewport-zoom-toolbar">
+            <button id="viewportZoomOut" class="btn btn-small" type="button" aria-label="Zoom out">−</button>
+            <span id="viewportZoomLevel">100%</span>
+            <button id="viewportZoomIn" class="btn btn-small" type="button" aria-label="Zoom in">+</button>
+            <button id="viewportZoomReset" class="btn btn-small" type="button">Reset</button>
+            <button id="viewportZoomClose" class="btn btn-small" type="button" aria-label="Close preview" data-icon="x">Close</button>
+          </div>
+          <div class="viewport-zoom-scroll"><img id="viewportZoomImage" alt="Zoomed full-page viewport preview" /></div>
+        </dialog>
+      </div>
+    </details>
+
+    <details class="card shortcut-guide collapsible-card">
+      <summary class="card-header collapsible-summary"><span class="card-icon" data-icon="keyboard" aria-hidden="true"></span><h2>Shortcuts &amp; quick guide</h2></summary>
+      <p id="shortcutBinding"><span>Open SmartForm AutoFill:</span> <kbd id="actionShortcutChip">Loading…</kbd></p>
+      <p>Change it in your browser's extension shortcut settings: <a id="shortcutSettingsLink" href="chrome://extensions/shortcuts">chrome://extensions/shortcuts</a>.</p>
+      <p>Workflow: add optional files → scan/fill → review → run a safe page action → generate/export test cases and evidence.</p>
+    </details>
+
+    <section class="card danger-zone" aria-labelledby="dangerZoneTitle">
+      <div class="card-header"><h2 id="dangerZoneTitle"><span class="card-icon" data-icon="alert" aria-hidden="true"></span>Danger zone</h2></div>
+      <div class="data-clear-actions">
+        <div class="danger-row"><div><strong>Stored test files</strong><p>Deletes every file and file-to-category mapping.</p></div><button id="clearFilesBtn" class="btn btn-small btn-danger-outline" type="button" data-icon="trash">Clear files</button></div>
+        <div class="danger-row"><div><strong>Site credentials</strong><p>Deletes saved test credentials for all sites.</p></div><button id="clearCredentialsBtn" class="btn btn-small btn-danger-outline" type="button" data-icon="trash">Clear credentials</button></div>
+        <div class="danger-row"><div><strong>All extension data</strong><p>Files, mappings, credentials, logs, generated data and site settings.</p></div><button id="clearAllDataBtn" class="btn btn-small btn-danger" type="button" data-icon="trash">Clear all data</button></div>
+      </div>
+    </section>
+
+    <details id="diagnosticsPanel" class="card diagnostics-panel" hidden>
+      <summary>Diagnostics</summary>
+      <pre id="diagnosticsOutput"></pre>
+    </details>
+
+    </div>
+    </div>
+  </main>
+
+  <footer class="sticky-fill-bar" aria-label="Primary action">
+    <button id="fillFormBtn" class="btn btn-primary btn-xl" type="button" data-requires-ext aria-describedby="fillButtonReason" data-tooltip="Run the selected mode on the target page." data-icon="zap" title="Fill the form (Alt+F)" aria-keyshortcuts="Alt+F">Fill the form</button>
+    <button id="cancelFillBtn" class="btn btn-stop" type="button" disabled hidden aria-label="Stop active form fill or QA run" title="Stop the active fill or QA run" data-icon="stop">Stop fill / QA run</button>
+    <div id="fillButtonReason" class="btn-hint fill-button-reason" role="status">Scan the page first</div>
+  </footer>
+  </div>
+
+  <dialog id="helpDialog" class="confirm-dialog help-dialog" aria-labelledby="helpTitle">
+    <div class="help-head"><h2 id="helpTitle">How it works</h2><button id="helpClose" class="icon-btn" type="button" aria-label="Close help" data-icon="x"></button></div>
+    <div class="help-body" tabindex="0" role="region" aria-label="Help content">
+      <h3>The basics</h3>
+      <ol class="help-steps">
+        <li>Open the web form you want to test in the current tab.</li>
+        <li>Optional: press <strong>Scan page</strong> to see what the extension found.</li>
+        <li>Pick what kind of data you want, then press <strong>Fill the form</strong>.</li>
+        <li>Check the page. Submit it yourself, or let step 3 press the button for you.</li>
+      </ol>
+      <h3>Which option should I pick?</h3>
+      <dl class="help-modes">
+        <dt>Quick fill</dt><dd>Realistic fake data everywhere. Use this most of the time.</dd>
+        <dt>Valid data</dt><dd>Correct values only, to confirm the form accepts good input.</dd>
+        <dt>Wrong data</dt><dd>Bad values, to check the form shows clear error messages.</dd>
+        <dt>Edge cases</dt><dd>Very short/long and min/max values, to check limits.</dd>
+        <dt>Full QA run</dt><dd>Tries all of the above in turn and downloads a JSON + HTML report.</dd>
+      </dl>
+      <h3>Is it safe?</h3>
+      <p>All values are fake. Nothing is submitted unless you turn that on. Page actions start in <em>Preview only</em> mode, and Delete, Cancel, Log out and Pay buttons are always skipped. Use test or staging sites, never production.</p>
+      <h3>Something isn’t working?</h3>
+      <ul class="help-faq">
+        <li><strong>“Can’t read this page”</strong> – reload the website tab, then try again. Browser pages such as <code>chrome://</code> and the Web Store can’t be used.</li>
+        <li><strong>A button is greyed out</strong> – hover over it to see why.</li>
+        <li><strong>A field was skipped</strong> – some custom widgets can’t be filled automatically. Fill those by hand.</li>
+      </ul>
+      <h3>Keyboard shortcuts</h3>
+      <dl class="help-keys">
+        <dt><kbd>Alt</kbd> + <kbd>S</kbd></dt><dd>Scan page</dd>
+        <dt><kbd>Alt</kbd> + <kbd>F</kbd></dt><dd>Fill the form</dd>
+        <dt><kbd>Alt</kbd> + <kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd></dt><dd>Test / Output / Setup tab</dd>
+        <dt><kbd>?</kbd></dt><dd>Open this help</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Close dialogs and menus</dd>
+      </dl>
+    </div>
+  </dialog>
+
+  <dialog id="confirmDialog" class="confirm-dialog" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+    <form method="dialog">
+      <div class="confirm-body">
+        <span class="confirm-icon" data-icon="alert" aria-hidden="true"></span>
+        <div><h2 id="confirmTitle">Are you sure?</h2><p id="confirmMessage"></p></div>
+      </div>
+      <div class="confirm-actions">
+        <button id="confirmCancel" class="btn btn-small" value="cancel" type="submit">Cancel</button>
+        <button id="confirmOk" class="btn btn-small btn-danger" value="ok" type="submit">Continue</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="../utils/ext.js"></script>
+  <script src="../utils/logger.js"></script>
+  <script src="../utils/status-enum.js"></script>
+  <script src="../utils/idb-storage.js"></script>
+  <script src="../utils/storage.js"></script>
+  <script src="../utils/data-generator.js"></script>
+  <script src="../utils/file-types.js"></script>
+  <script src="../utils/dom.js"></script>
+  <script src="../utils/testcase-export.js"></script>
+  <script src="../utils/qa-report.js"></script>
+  <script src="../utils/viewport-presets.js"></script>
+  <script src="shortcuts.js"></script>
+  <!-- Popup scripts share one global scope and must stay in this order; main.js runs init() last. -->
+  <script src="state.js"></script>
+  <script src="ui.js"></script>
+  <script src="sections/ai.js"></script>
+  <script src="sections/files.js"></script>
+  <script src="sections/test.js"></script>
+  <script src="sections/output.js"></script>
+  <script src="sections/setup.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

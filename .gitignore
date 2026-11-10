@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.zip
+debug.log
+chrome-screenshot-profile/
+screenshots/glass-verification/
+screenshots/verification/
+screenshots/responsive/
