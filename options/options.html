@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SmartForm AutoFill — Settings</title>
+  <link rel="stylesheet" href="../styles/tokens.css" />
+  <link rel="stylesheet" href="options.css" />
+  <script src="../popup/icons.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2.5 4.5 13.5h6.5l-1 8 8.5-11h-6.5l1-8Z" /></svg></span>
+      <div><h1>Settings</h1><p>SmartForm AutoFill</p></div>
+    </div>
+    <button id="optionsThemeToggle" class="icon-btn theme-toggle" type="button" aria-label="Theme: system. Switch to light theme" data-icon="monitor"></button>
+  </header>
+
+  <div class="layout">
+    <nav class="sidenav" aria-label="Settings sections">
+      <a href="#general" data-icon="settings">General</a>
+      <a href="#data" data-icon="database">Data &amp; seed</a>
+      <a href="#files" data-icon="upload">Files &amp; mappings</a>
+      <a href="#selectors" data-icon="target">Site selectors</a>
+      <a href="#credentials" data-icon="lock">Credentials</a>
+      <a href="#ai" data-icon="sparkles">AI endpoints</a>
+      <a href="#privacy" data-icon="shield">Privacy &amp; data</a>
+    </nav>
+
+    <main class="wrap">
+      <section id="general" class="panel" aria-labelledby="generalTitle">
+        <div class="panel-head"><h2 id="generalTitle">General</h2><p>Where the extension may run and how page checks behave.</p></div>
+        <label class="field"><span>Allowed test environments</span><textarea id="allowedTestEnvironments" rows="2" placeholder="localhost, staging.example.test" aria-describedby="allowedEnvHint"></textarea><small id="allowedEnvHint" class="hint">Hostnames, comma-separated. The popup header shows <strong>Allowed test env</strong> for these hosts and <strong>Not allowlisted</strong> for everything else.</small></label>
+        <div class="grid-2">
+          <label class="field"><span>Same-origin link check limit</span><input type="number" id="linkCheckLimit" min="0" max="100" value="25" /><small class="hint">0–100 links per scan.</small></label>
+          <label class="field"><span>Multi-select choices per field</span><input type="number" id="multiSelectCount" min="1" max="10" value="2" /></label>
+        </div>
+        <label class="field"><span>Spelling ignore list</span><textarea id="spellingIgnoreList" rows="2" placeholder="product names, abbreviations"></textarea></label>
+        <label class="field"><span>Custom dictionary words</span><textarea id="spellingDictionary" rows="2" placeholder="brand names, local terms"></textarea></label>
+        <p class="hint">Spelling and link results remain heuristic. Cross-origin links are labeled not checked and are not requested.</p>
+        <label class="field check-field"><span><input type="checkbox" id="reduceEffectsToggle" /> Reduce visual effects</span><small class="hint">Turns off blur and transparency in the popup and on this page. Saved on this computer.</small></label>
+      </section>
+
+      <section id="data" class="panel" aria-labelledby="dataTitle">
+        <div class="panel-head"><h2 id="dataTitle">Data &amp; seed</h2><p>How synthetic values are generated.</p></div>
+        <div class="grid-2">
+          <label class="field">
+            <span>Identity number format</span>
+            <select id="identityFormat">
+              <option value="GENERIC">Generic (ID12345678)</option>
+              <option value="PAN">PAN-style (ABCDE1234F)</option>
+              <option value="AADHAAR">Aadhaar-shaped (Verhoeff checksum, synthetic)</option>
+              <option value="GSTIN">GSTIN-shaped (checksum, synthetic)</option>
+              <option value="REGISTRATION">Registration-style (REG123456)</option>
+            </select>
+          </label>
+          <label class="field"><span>Email / mobile locale</span><select id="dataLocale"><option value="IN">India</option><option value="US">United States</option><option value="UK">United Kingdom</option></select></label>
+        </div>
+        <label class="field seed-field">
+          <span>Data seed <span class="badge">Optional</span></span>
+          <input type="text" id="dataSeed" maxlength="64" autocomplete="off" spellcheck="false" placeholder="Leave empty for random data" aria-describedby="dataSeedHint" />
+          <small id="dataSeedHint" class="hint">Any text. The same seed produces the same generated values, so a Full QA run can be replayed. The seed is shown in the Full QA report.</small>
+        </label>
+        <div class="grid-2">
+          <label class="field"><span>Registration number pattern</span><input type="text" id="regNumberFormat" placeholder="{LETTERS}{DIGITS}" /><small class="hint">Tokens: <code>{LETTERS}</code> and <code>{DIGITS}</code>.</small></label>
+          <label class="field"><span>Test PIN codes</span><input type="text" id="testPinCodes" placeholder="411001, 411007, 110001" /></label>
+        </div>
+        <div class="grid-2">
+          <label class="field"><span>First names pool</span><textarea id="firstNames" rows="2"></textarea></label>
+          <label class="field"><span>Last names pool</span><textarea id="lastNames" rows="2"></textarea></label>
+        </div>
+        <label class="field"><span>Import project test values (CSV or JSON)</span><input type="file" id="importedTestDataFile" accept=".csv,.json,application/json,text/csv" /><small class="hint">CSV headers: field, value. JSON may be an object of field label/name/type to value. Imported values take priority over generated values.</small></label>
+        <label class="field"><span>Repeatable rows by site (JSON)</span><textarea id="repeatRowsBySite" class="mono" rows="3" placeholder='{"example.com":[{"buttonSelector":"#addRow","rowSelector":".row","count":2}]}'></textarea></label>
+      </section>
+
+      <section id="files" class="panel" aria-labelledby="filesTitle">
+        <div class="panel-head"><h2 id="filesTitle">Files &amp; mappings</h2><p>Keywords that identify file-upload fields, in addition to the built-in ones.</p></div>
+        <div id="mappingsList" class="mappings-list"></div>
+      </section>
+
+      <section id="selectors" class="panel" aria-labelledby="selectorsTitle">
+        <div class="panel-head"><h2 id="selectorsTitle">Site selectors</h2><p>Exact CSS selectors per field type. They override auto-detection on that hostname only.</p></div>
+        <label class="field"><span>Website hostname</span><input type="text" id="siteHostname" placeholder="example.com" /></label>
+        <div class="selector-grid" id="selectorGrid"></div>
+        <div class="picker-row">
+          <label class="field"><span>Field type to pick</span><select id="selectorPickType"></select></label>
+          <button id="pickSelectorBtn" class="btn" type="button" data-icon="pointer">Pick field on active page</button>
+        </div>
+        <p class="hint">The picker creates a CSS selector for the chosen field type. Review it, then save the site config.</p>
+        <div class="button-row">
+          <button id="saveSiteConfig" class="btn btn-primary" data-icon="check">Save site config</button>
+          <button id="loadSiteConfig" class="btn" data-icon="refresh">Load existing config</button>
+        </div>
+        <div id="siteConfigList" class="site-config-list"></div>
+      </section>
+
+      <section id="credentials" class="panel" aria-labelledby="credentialsTitle">
+        <div class="panel-head"><h2 id="credentialsTitle">Credentials</h2><p>Test-only credentials used when a site needs them during a fill.</p></div>
+        <label class="field"><span>Test credentials by site (JSON)</span><textarea id="credentialsBySite" class="mono" rows="4" placeholder='{"example.com":{"testPassword":"Password123!","testOtp":"123456"}}'></textarea></label>
+        <p class="callout" data-icon="alert">Stored credentials are not encrypted. Use throwaway test accounts only — never real passwords.</p>
+      </section>
+
+      <section id="ai" class="panel" aria-labelledby="aiTitle">
+        <div class="panel-head"><h2 id="aiTitle">AI endpoints</h2><p>The AI assistant only sends requests to these origins.</p></div>
+        <label class="field"><span>Approved AI endpoint origins</span><textarea id="aiEndpointAllowlist" rows="2" placeholder="https://api.openai.com, https://ai.internal.example"></textarea><small class="hint">HTTPS only (HTTP is allowed for localhost). API keys are never stored.</small></label>
+      </section>
+
+      <section id="privacy" class="panel" aria-labelledby="privacyTitle">
+        <div class="panel-head"><h2 id="privacyTitle">Privacy &amp; data</h2><p>Data stays in this browser. Clear it from the popup's Setup → Danger zone.</p></div>
+        <label class="field"><span>Auto-clear data after inactive days</span><input type="number" id="autoClearAfterDays" min="0" max="3650" value="0" /><small class="hint">0 disables auto-clear.</small></label>
+      </section>
+
+      <div class="savebar">
+        <span class="hint">Saves General, Data, Credentials, AI and Privacy settings.</span>
+        <button id="saveGeneration" class="btn btn-primary" data-icon="check">Save settings</button>
+      </div>
+    </main>
+  </div>
+
+  <div id="statusMsg" class="status-msg hidden" role="status" aria-live="polite"></div>
+
+  <script src="../utils/ext.js"></script>
+  <script src="../utils/logger.js"></script>
+  <script src="../utils/storage.js"></script>
+  <script src="../utils/file-types.js"></script>
+  <script src="../utils/dom.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+/*
+ * SmartForm AutoFill design tokens — glassmorphism edition.
+ * The ONLY file that contains raw colour values. Popup/side panel and options use these tokens.
+ *
+ * Look: a soft multi-glow gradient backdrop; translucent "frosted glass" surfaces with
+ * backdrop blur, white edge highlights and soft borders; gradient primary actions.
+ *
+ * Themes: light (default), dark via prefers-color-scheme, manual override with
+ * <html data-theme="light|dark"> persisted under localStorage key `sffaTheme`.
+ * Glass opacity is kept high enough that body text stays >= 4.5:1 (WCAG 2.2 AA).
+ * Without backdrop-filter support, or with prefers-reduced-transparency, surfaces turn solid.
+ */
+:root {
+  color-scheme: light;
+
+  /* Backdrop */
+  --bg: #eef0fb;
+  --bg-gradient:
+    radial-gradient(42% 38% at 6% 2%, rgba(129, 140, 248, 0.55) 0%, rgba(129, 140, 248, 0) 100%),
+    radial-gradient(38% 34% at 96% 8%, rgba(236, 72, 153, 0.30) 0%, rgba(236, 72, 153, 0) 100%),
+    radial-gradient(45% 40% at 88% 96%, rgba(45, 212, 191, 0.32) 0%, rgba(45, 212, 191, 0) 100%),
+    radial-gradient(40% 38% at 4% 92%, rgba(56, 189, 248, 0.30) 0%, rgba(56, 189, 248, 0) 100%),
+    linear-gradient(160deg, #f1f2ff 0%, #edf1fb 48%, #f6effa 100%);
+
+  /* Glass surfaces */
+  --surface-1: rgba(255, 255, 255, 0.62);
+  --surface-2: rgba(255, 255, 255, 0.42);
+  --surface-3: rgba(255, 255, 255, 0.78);
+  --surface-overlay: rgba(255, 255, 255, 0.55);
+  --border-subtle: rgba(255, 255, 255, 0.75);
+  --border-strong: rgba(71, 85, 125, 0.32);
+  --glass-blur: 18px;
+  --glass-saturate: 170%;
+  --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 55%);
+  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+
+  /* Text */
+  --text-primary: #0f1324;
+  --text-secondary: #3f4760;
+  --text-tertiary: #555d74;
+  --text-disabled: #7d8497;
+
+  /* Accent — indigo to violet */
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-text: #4338ca;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(99, 102, 241, 0.14);
+  --accent-soft-border: rgba(99, 102, 241, 0.38);
+  --accent-gradient: linear-gradient(135deg, #4f46e5 0%, #6d3fe0 55%, #7c3aed 100%);
+
+  /* Status */
+  --success: #137333;
+  --success-soft: rgba(220, 245, 230, 0.85);
+  --success-border: rgba(19, 115, 51, 0.30);
+  --warning: #8a4b06;
+  --warning-soft: rgba(253, 241, 218, 0.88);
+  --warning-border: rgba(146, 82, 10, 0.32);
+  --danger: #b91c1c;
+  --danger-soft: rgba(253, 230, 230, 0.88);
+  --danger-border: rgba(185, 28, 28, 0.30);
+  --info: #0b5f94;
+  --info-soft: rgba(224, 239, 250, 0.82);
+  --info-border: rgba(11, 105, 163, 0.28);
+  --on-status: #ffffff;
+
+  /* Effects */
+  --focus-ring: #4f46e5;
+  --shadow-1: 0 6px 24px -8px rgba(31, 38, 135, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --shadow-2: 0 22px 50px -14px rgba(31, 38, 135, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --accent-glow: 0 10px 28px -8px rgba(99, 70, 229, 0.55);
+  --skeleton-a: rgba(255, 255, 255, 0.45);
+  --skeleton-b: rgba(255, 255, 255, 0.9);
+  --scrim: rgba(30, 27, 75, 0.28);
+
+  /* Type */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  --fs-11: 11px;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-20: 20px;
+
+  /* Spacing — 4px grid */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* Radius — slightly rounder for glass */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-full: 999px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur-base: 160ms;
+  --dur-slow: 200ms;
+
+  /* Layout */
+  --hit: 32px;
+  --header-h: 56px;
+  --footer-h: 76px;
+  --z-sticky: 10;
+  --z-overlay: 40;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #090a14;
+    --bg-gradient:
+      radial-gradient(45% 40% at 6% 0%, rgba(99, 102, 241, 0.42) 0%, rgba(99, 102, 241, 0) 100%),
+      radial-gradient(40% 36% at 98% 10%, rgba(168, 85, 247, 0.30) 0%, rgba(168, 85, 247, 0) 100%),
+      radial-gradient(45% 42% at 90% 98%, rgba(20, 184, 166, 0.22) 0%, rgba(20, 184, 166, 0) 100%),
+      radial-gradient(40% 40% at 2% 95%, rgba(14, 165, 233, 0.20) 0%, rgba(14, 165, 233, 0) 100%),
+      linear-gradient(160deg, #0b0c1a 0%, #090a14 50%, #0e0b1a 100%);
+    --surface-1: rgba(22, 24, 42, 0.58);
+    --surface-2: rgba(255, 255, 255, 0.05);
+    --surface-3: rgba(255, 255, 255, 0.10);
+    --surface-overlay: rgba(14, 15, 30, 0.6);
+    --border-subtle: rgba(255, 255, 255, 0.11);
+    --border-strong: rgba(255, 255, 255, 0.22);
+    --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 55%);
+    --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --text-primary: #eef0f7;
+    --text-secondary: #b9bfd0;
+    --text-tertiary: #9aa1b4;
+    --text-disabled: #6e7487;
+    --accent: #5b5fd9;
+    --accent-hover: #6b6fe6;
+    --accent-text: #b2b4ff;
+    --accent-contrast: #ffffff;
+    --accent-soft: rgba(99, 102, 241, 0.20);
+    --accent-soft-border: rgba(139, 142, 255, 0.45);
+    --accent-gradient: linear-gradient(135deg, #5653d6 0%, #6a46d8 55%, #7c4ddb 100%);
+    --success: #6ee39a;
+    --success-soft: rgba(34, 197, 94, 0.14);
+    --success-border: rgba(110, 227, 154, 0.32);
+    --warning: #f7c768;
+    --warning-soft: rgba(245, 158, 11, 0.14);
+    --warning-border: rgba(247, 199, 104, 0.32);
+    --danger: #ff9393;
+    --danger-soft: rgba(239, 68, 68, 0.15);
+    --danger-border: rgba(255, 147, 147, 0.34);
+    --info: #86c3f7;
+    --info-soft: rgba(14, 165, 233, 0.14);
+    --info-border: rgba(134, 195, 247, 0.30);
+    --on-status: #10121f;
+    --focus-ring: #b2b4ff;
+    --shadow-1: 0 8px 28px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --shadow-2: 0 24px 56px -16px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --accent-glow: 0 10px 30px -8px rgba(110, 90, 240, 0.7);
+    --skeleton-a: rgba(255, 255, 255, 0.05);
+    --skeleton-b: rgba(255, 255, 255, 0.12);
+    --scrim: rgba(3, 4, 12, 0.6);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #090a14;
+  --bg-gradient:
+    radial-gradient(45% 40% at 6% 0%, rgba(99, 102, 241, 0.42) 0%, rgba(99, 102, 241, 0) 100%),
+    radial-gradient(40% 36% at 98% 10%, rgba(168, 85, 247, 0.30) 0%, rgba(168, 85, 247, 0) 100%),
+    radial-gradient(45% 42% at 90% 98%, rgba(20, 184, 166, 0.22) 0%, rgba(20, 184, 166, 0) 100%),
+    radial-gradient(40% 40% at 2% 95%, rgba(14, 165, 233, 0.20) 0%, rgba(14, 165, 233, 0) 100%),
+    linear-gradient(160deg, #0b0c1a 0%, #090a14 50%, #0e0b1a 100%);
+  --surface-1: rgba(22, 24, 42, 0.58);
+  --surface-2: rgba(255, 255, 255, 0.05);
+  --surface-3: rgba(255, 255, 255, 0.10);
+  --surface-overlay: rgba(14, 15, 30, 0.6);
+  --border-subtle: rgba(255, 255, 255, 0.11);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 55%);
+  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --text-primary: #eef0f7;
+  --text-secondary: #b9bfd0;
+  --text-tertiary: #9aa1b4;
+  --text-disabled: #6e7487;
+  --accent: #5b5fd9;
+  --accent-hover: #6b6fe6;
+  --accent-text: #b2b4ff;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(99, 102, 241, 0.20);
+  --accent-soft-border: rgba(139, 142, 255, 0.45);
+  --accent-gradient: linear-gradient(135deg, #5653d6 0%, #6a46d8 55%, #7c4ddb 100%);
+  --success: #6ee39a;
+  --success-soft: rgba(34, 197, 94, 0.14);
+  --success-border: rgba(110, 227, 154, 0.32);
+  --warning: #f7c768;
+  --warning-soft: rgba(245, 158, 11, 0.14);
+  --warning-border: rgba(247, 199, 104, 0.32);
+  --danger: #ff9393;
+  --danger-soft: rgba(239, 68, 68, 0.15);
+  --danger-border: rgba(255, 147, 147, 0.34);
+  --info: #86c3f7;
+  --info-soft: rgba(14, 165, 233, 0.14);
+  --info-border: rgba(134, 195, 247, 0.30);
+  --on-status: #10121f;
+  --focus-ring: #b2b4ff;
+  --shadow-1: 0 8px 28px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --shadow-2: 0 24px 56px -16px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --accent-glow: 0 10px 30px -8px rgba(110, 90, 240, 0.7);
+  --skeleton-a: rgba(255, 255, 255, 0.05);
+  --skeleton-b: rgba(255, 255, 255, 0.12);
+  --scrim: rgba(3, 4, 12, 0.6);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* Solid fallbacks: no backdrop blur support, or the user asked for less transparency. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root { --surface-1: #f9faff; --surface-2: #f1f3fb; --surface-overlay: #f9faff; --border-subtle: #dfe3ef; }
+  :root[data-theme="dark"] { --surface-1: #161828; --surface-2: #1c1f31; --surface-overlay: #12131f; --border-subtle: #2a2e44; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --surface-1: #161828; --surface-2: #1c1f31; --surface-overlay: #12131f; --border-subtle: #2a2e44; }
+  }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root { --surface-1: #f9faff; --surface-2: #f1f3fb; --surface-overlay: #f9faff; --border-subtle: #d3d8e8; --glass-blur: 0px; }
+  :root[data-theme="dark"] { --surface-1: #161828; --surface-2: #1c1f31; --surface-overlay: #12131f; --border-subtle: #33384f; --glass-blur: 0px; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --surface-1: #161828; --surface-2: #1c1f31; --surface-overlay: #12131f; --border-subtle: #33384f; --glass-blur: 0px; }
+  }
+}
+
+/* "Reduce visual effects" setting (Setup / Options → sffaReduceEffects): no blur, solid surfaces. */
+:root[data-effects="reduced"] { --glass-blur: 0px; --glass-saturate: 100%; --surface-1: #f9faff; --surface-2: #f1f3fb; --surface-overlay: #f9faff; --border-subtle: #dfe3ef; --glass-sheen: none; }
+:root[data-effects="reduced"][data-theme="dark"] { --surface-1: #161828; --surface-2: #1c1f31; --surface-overlay: #12131f; --border-subtle: #2a2e44; }
+@media (prefers-color-scheme: dark) {
+  :root[data-effects="reduced"]:not([data-theme="light"]) { --surface-1: #161828; --surface-2: #1c1f31; --surface-overlay: #12131f; --border-subtle: #2a2e44; }
+}
