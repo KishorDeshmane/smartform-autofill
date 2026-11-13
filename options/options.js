@@ -158,6 +158,9 @@ async function loadGenerationSettings() {
   document.getElementById('spellingDictionary').value = (settings.spellingDictionary || []).join(', ');
   document.getElementById('allowedTestEnvironments').value = (settings.allowedTestEnvironments || []).join(', ');
   document.getElementById('autoClearAfterDays').value = settings.autoClearAfterDays || 0;
+  document.getElementById('fillOrder').value = settings.fillOrder === 'type' ? 'type' : 'page';
+  document.getElementById('tickSameAsBoxes').checked = settings.tickSameAsBoxes === true;
+  document.getElementById('keepExistingValues').checked = settings.keepExistingValues === true;
   document.getElementById('aiEndpointAllowlist').value = (settings.aiEndpointAllowlist || []).join(', ');
   document.getElementById('credentialsBySite').value = JSON.stringify(settings.credentialsBySite || {}, null, 2);
   document.getElementById('repeatRowsBySite').value = JSON.stringify(settings.repeatRowsBySite || {}, null, 2);
@@ -175,6 +178,9 @@ async function saveGenerationSettings() {
       firstNames: parseCsv(document.getElementById('firstNames').value),
       lastNames: parseCsv(document.getElementById('lastNames').value),
       multiSelectCount: Math.max(1, Math.min(10, Number(document.getElementById('multiSelectCount').value) || 2)),
+      fillOrder: document.getElementById('fillOrder').value === 'type' ? 'type' : 'page',
+      tickSameAsBoxes: document.getElementById('tickSameAsBoxes').checked,
+      keepExistingValues: document.getElementById('keepExistingValues').checked,
       linkCheckLimit: Math.max(0, Math.min(100, Number(document.getElementById('linkCheckLimit').value) || 0)),
       spellingIgnoreList: parseCsv(document.getElementById('spellingIgnoreList').value),
       spellingDictionary: parseCsv(document.getElementById('spellingDictionary').value),
@@ -190,7 +196,7 @@ async function saveGenerationSettings() {
       repeatRowsBySite: validateRepeatRows(JSON.parse(document.getElementById('repeatRowsBySite').value || '{}'))
     };
     await SFFAStorage.updateSettings(patch);
-    showStatus('Data generation settings saved');
+    showStatus('Settings saved');
   } catch (error) {
     showStatus(`Invalid settings: ${error.message}`);
   }
@@ -378,7 +384,7 @@ async function init() {
   document.getElementById('saveGeneration').addEventListener('click', async () => {
     await saveGenerationSettings();
     await saveMappingKeywords();
-    showStatus('Data generation settings saved');
+    showStatus('Settings saved');
   });
 
   document.getElementById('saveSiteConfig').addEventListener('click', saveSiteConfig);

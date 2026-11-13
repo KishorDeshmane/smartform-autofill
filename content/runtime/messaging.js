@@ -1,18 +1,18 @@
-// SmartForm AutoFill page runtime — Runtime message router (message type names are unchanged).
+// QA Kits page runtime — Runtime message router (message type names are unchanged).
 // Generated from the former single-file content/content.js. Modules share state through
 // window.__SFFA_RT__ (RT) and each stays wrapped in its own function, so re-injection is safe.
 (function () {
   if (window.__SFFA_RT_SKIP__) return;
   const RT = window.__SFFA_RT__;
-  if (!RT) throw new Error('SmartForm AutoFill: content/runtime/core.js must load first.');
+  if (!RT) throw new Error('QA Kits: content/runtime/core.js must load first.');
 
   window.SFFAExt.onMessage((message, sender, sendResponse) => {
     const response = sendResponse;
     sendResponse = (result) => {
-      if (message?._sffaDebug) console.debug('[SFFA message result]', { type: message.type, result });
+      if (message?._sffaDebug) console.debug('[QA Kits message result]', { type: message.type, result });
       response(result);
     };
-    if (message?._sffaDebug) console.debug('[SFFA message received]', { type: message.type });
+    if (message?._sffaDebug) console.debug('[QA Kits message received]', { type: message.type });
     if (!message || typeof message.type !== 'string') return false;
     if (message.type === 'SFFA_PING') {
       sendResponse({

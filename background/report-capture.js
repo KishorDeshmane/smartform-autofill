@@ -696,7 +696,8 @@
   }
 
   /** Captures page imagery and session activity, then returns report data or an error. */
-  async function captureFullPageReport(tabId) {
+  /** `download: false` returns the image (imageDataUrl, filename) instead of saving it, so the user chooses later. */
+  async function captureFullPageReport(tabId, { download = true } = {}) {
     const { session, freshlyAttached } = await ensureAttached(tabId);
     if (freshlyAttached) await sleep(LOG_REPLAY_WAIT_MS);
 
@@ -736,15 +737,15 @@
       );
 
       const timestamp = Date.now();
-      const downloadId = await root.SFFAExt.downloads.download({
-        url: composedDataUrl,
-        filename: `sffa-report-${timestamp}.png`,
-        saveAs: true
-      });
-      if (downloadId == null) throw new Error('The report image was captured but the browser could not start its download.');
+      const filename = `sffa-report-${timestamp}.png`;
+      if (download) {
+        const downloadId = await root.SFFAExt.downloads.download({ url: composedDataUrl, filename, saveAs: true });
+        if (downloadId == null) throw new Error('The report image was captured but the browser could not start its download.');
+      }
 
       return {
         ok: true,
+        ...(download ? {} : { imageDataUrl: composedDataUrl, filename }),
         consoleCount: session.consoleLines.length,
         networkCount: session.networkLines.length,
         errorCount: session.flaggedErrors.length,

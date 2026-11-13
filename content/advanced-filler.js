@@ -137,36 +137,50 @@
     return {ok:count>0,chosenText,count};
   }
   /** Fills supported custom widgets, skips unrelated controls, and stops when cancelled. */
-  async function runWidgets(data,settings={},config={},isCancelled=()=>false){
-    const results=[];const done=new Set();const widgets=all('[contenteditable="true"], [role="checkbox"], [role="switch"], [role="radio"], [role="slider"], [role="spinbutton"]');
-    for(const el of widgets){
-      if(!visible(el)||el.matches('input,textarea,select')||!enabled(el)||!inFieldScope(el,config.fieldScope))continue;
-      const context=(el.getAttribute('aria-label')+' '+el.id+' '+el.className+' '+(el.parentElement?.textContent||'')).toLowerCase();
-      const explicitWidget=el.hasAttribute('data-sffa-fill') || el.hasAttribute('data-test-fill') || /agree|consent|accept|terms|confirm|declare|rating|score|rich.?text|description|comment|note/.test(context);
-      if(!explicitWidget && ['checkbox','switch','radio'].includes(el.getAttribute('role'))) { results.push({element:el.id||el.getAttribute('role'),kind:el.getAttribute('role'),ok:false,reason:'Skipped unrelated custom preference widget'}); continue; }
-      if(isCancelled())throw Error('Run cancelled');
-      const role=el.getAttribute('role');let ok=false,reason='Widget did not confirm the requested state';
-      try{
-        if(el.getAttribute('contenteditable')==='true'){
-          if(el.parentElement?.closest('[contenteditable="true"]'))continue;
-          ok=write(el,settings.richTextValue||'Sample QA content for verification.');await sleep(100);ok=ok&&el.textContent.trim().length>0;
-        }else if(role==='checkbox'||role==='switch'||role==='radio'){
-          if(role==='radio'){
-            const group=el.closest('[role="radiogroup"]')||el.closest('fieldset')||el.parentElement;const groupKey=group?.getAttribute('data-group')||group?.id||group;if(done.has(groupKey))continue;done.add(groupKey);
-          }
-          if(el.getAttribute('aria-checked')!=='true')el.click();await sleep(100);ok=el.getAttribute('aria-checked')==='true';
-        }else{
-          const current=Number(el.getAttribute('aria-valuenow')),min=Number(el.getAttribute('aria-valuemin')||0),max=Number(el.getAttribute('aria-valuemax')||100);
-          const target=Math.max(min,Math.min(max,(min+max)/2));
-          el.focus();const w=el.ownerDocument.defaultView;
-          el.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Home',bubbles:true,composed:true}));
-          for(let i=0;i<20&&Number(el.getAttribute('aria-valuenow'))<target;i++){
-            const previous=el.getAttribute('aria-valuenow');el.dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,composed:true}));await sleep(15);if(el.getAttribute('aria-valuenow')===previous)break;
-          }
-          const now=Number(el.getAttribute('aria-valuenow'));ok=el.hasAttribute('aria-valuenow')&&Number.isFinite(now)&&now>=min&&now<=max&&(now!==current||current===target);
+  /** Custom widgets the filler can handle: rich text, ARIA checkboxes/switches/radios, sliders, spin buttons. */
+  function widgetCandidates(config={}){
+    return all('[contenteditable="true"], [role="checkbox"], [role="switch"], [role="radio"], [role="slider"], [role="spinbutton"]')
+      .filter(el=>visible(el)&&!el.matches('input,textarea,select')&&enabled(el)&&inFieldScope(el,config.fieldScope));
+  }
+  /**
+   * Fills one custom widget. Returns a result { element, kind, ok, reason }, or null when there is
+   * nothing to do (a nested editor, or a radio group already handled — `done` tracks groups).
+   */
+  async function fillWidget(el,settings={},done=new Set()){
+    const context=(el.getAttribute('aria-label')+' '+el.id+' '+el.className+' '+(el.parentElement?.textContent||'')).toLowerCase();
+    const explicitWidget=el.hasAttribute('data-sffa-fill') || el.hasAttribute('data-test-fill') || /agree|consent|accept|terms|confirm|declare|rating|score|rich.?text|description|comment|note/.test(context);
+    const role=el.getAttribute('role');
+    if(!explicitWidget && ['checkbox','switch','radio'].includes(role)) return {element:el.id||role,kind:role,ok:false,reason:'Skipped unrelated custom preference widget'};
+    let ok=false,reason='Widget did not confirm the requested state';
+    try{
+      if(el.getAttribute('contenteditable')==='true'){
+        if(el.parentElement?.closest('[contenteditable="true"]'))return null;
+        ok=write(el,settings.richTextValue||'Sample QA content for verification.');await sleep(100);ok=ok&&el.textContent.trim().length>0;
+      }else if(role==='checkbox'||role==='switch'||role==='radio'){
+        if(role==='radio'){
+          const group=el.closest('[role="radiogroup"]')||el.closest('fieldset')||el.parentElement;const groupKey=group?.getAttribute('data-group')||group?.id||group;if(done.has(groupKey))return null;done.add(groupKey);
         }
-      }catch(e){reason=e.message;}
-      results.push({element:el.id||role||'rich text',kind:role||'richtext',ok,reason:ok?'Verified DOM state':reason});
+        if(el.getAttribute('aria-checked')!=='true')el.click();await sleep(100);ok=el.getAttribute('aria-checked')==='true';
+      }else{
+        const current=Number(el.getAttribute('aria-valuenow')),min=Number(el.getAttribute('aria-valuemin')||0),max=Number(el.getAttribute('aria-valuemax')||100);
+        const target=Math.max(min,Math.min(max,(min+max)/2));
+        el.focus();const w=el.ownerDocument.defaultView;
+        el.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Home',bubbles:true,composed:true}));
+        for(let i=0;i<20&&Number(el.getAttribute('aria-valuenow'))<target;i++){
+          const previous=el.getAttribute('aria-valuenow');el.dispatchEvent(new w.KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true,composed:true}));await sleep(15);if(el.getAttribute('aria-valuenow')===previous)break;
+        }
+        const now=Number(el.getAttribute('aria-valuenow'));ok=el.hasAttribute('aria-valuenow')&&Number.isFinite(now)&&now>=min&&now<=max&&(now!==current||current===target);
+      }
+    }catch(e){reason=e.message;}
+    return {element:el.id||role||'rich text',kind:role||'richtext',ok,reason:ok?'Verified DOM state':reason};
+  }
+  /** Fills every custom widget on the page (the "by field type" order). */
+  async function runWidgets(data,settings={},config={},isCancelled=()=>false){
+    const results=[];const done=new Set();
+    for(const el of widgetCandidates(config)){
+      if(isCancelled())throw Error('Run cancelled');
+      const result=await fillWidget(el,settings,done);
+      if(result)results.push(result);
     }
     return results;
   }
@@ -181,6 +195,8 @@
     const otpBoxes=otpFields.filter(el=>el.maxLength===1||el.getAttribute('maxlength')==='1');
     for(const el of fields){
       const kind=sensitiveKind(el);if(!kind||!enabled(el))continue;
+      // Setting "Keep values already in the form": a password or code already typed stays.
+      if(settings.keepExistingValues===true&&(el.value||'').trim())continue;
       let value=kind==='password'?safePassword:safeOtp;
       if(kind==='otp'&&otpBoxes.length>1&&otpBoxes.includes(el))value=typeof safeOtp==='string'?safeOtp[otpBoxes.indexOf(el)]:null;
       const ok=value!=null&&value!==''&&write(el,value);
@@ -205,5 +221,5 @@
     }
     return results;
   }
-  root.SFFAAdvancedFiller={valueFor,patternValue,chooseMany,customChoice,runWidgets,credentials,repeatRows,sensitiveKind,write};
+  root.SFFAAdvancedFiller={valueFor,patternValue,chooseMany,customChoice,runWidgets,widgetCandidates,fillWidget,credentials,repeatRows,sensitiveKind,write};
 })(window);

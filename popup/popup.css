@@ -1,5 +1,5 @@
 /*
- * SmartForm AutoFill — popup & side panel.
+ * QA Kits — popup & side panel.
  * All colours come from ../styles/tokens.css (loaded first). This file must not contain raw
  * colour values or important-flag overrides; scripts/verify-glass-popup.mjs enforces both.
  * Class names, IDs and data attributes are hooks used by popup scripts and verify scripts.

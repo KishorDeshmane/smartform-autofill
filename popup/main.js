@@ -65,7 +65,9 @@ async function updateTargetTab() {
   }
   headerTabId = tab.id;
   try { await restoreSummaryForTab(tab); }
-  catch (error) { console.warn('[SFFA] Could not restore the saved summary for this tab:', error); }
+  catch (error) { console.warn('[QA Kits] Could not restore the saved summary for this tab:', error); }
+  try { await restoreFullQaDownloads(tab); }
+  catch (error) { console.warn('[QA Kits] Could not restore the last Full QA report:', error); }
   let hostname = '';
   try { hostname = new URL(tab.url).hostname; } catch (_) { /* Best-effort fallback: failure is intentionally non-fatal. */ }
   target.textContent = `Target: ${sanitizeReportText(tab.title || 'Untitled page')}${hostname ? ` (${hostname})` : ''}`;
@@ -138,7 +140,7 @@ async function requestSiteAccess() {
 function scheduleTargetTabRefresh() {
   summaryTabRefreshQueue = summaryTabRefreshQueue
     .then(() => updateTargetTab())
-    .catch(error => console.warn('[SFFA] Could not refresh active-tab summary:', error));
+    .catch(error => console.warn('[QA Kits] Could not refresh active-tab summary:', error));
 }
 
 /** Removes unsafe or excessive text before report content is displayed. */
@@ -221,8 +223,10 @@ function initKeyboardShortcuts() {
 function restoreLastMode() {
   let mode = null;
   try { mode = localStorage.getItem('sffaLastMode'); } catch (_) { /* Default mode is fine. */ }
-  if (mode === 'fullqa') document.getElementById('fullQaModeButton')?.setAttribute('aria-pressed', 'true');
-  else if (mode) {
+  if (mode === 'fullqa') {
+    document.getElementById('fullQaModeButton')?.setAttribute('aria-pressed', 'true');
+    document.querySelectorAll('input[name="qaMode"]').forEach(radio => { radio.checked = false; });
+  } else if (mode) {
     const radio = document.querySelector(`input[name="qaMode"][value="${CSS.escape(mode)}"]`);
     if (radio) radio.checked = true;
   }
@@ -233,7 +237,7 @@ async function init() {
   restoreLastMode();
   initSectionTabs();
   // Resolve the target tab right away; it must not wait on storage or background replies below.
-  const firstTabRefresh = updateTargetTab().catch(error => console.warn('[SFFA] Initial tab detection failed:', error));
+  const firstTabRefresh = updateTargetTab().catch(error => console.warn('[QA Kits] Initial tab detection failed:', error));
   initThemeAndLayout();
   initRedesignControls();
   if (window.SFFAFileTypes && window.SFFAFileTypes.UPLOAD_ACCEPT_ATTRIBUTE) {
@@ -254,12 +258,12 @@ async function init() {
 
   if (hasExt()) await withTimeout(sendRuntimeMessage({ type: 'SFFA_ENSURE_MIGRATION' }), 4000, null);
 
-  await renderFileList().catch(error => console.warn('[SFFA] File list failed to render:', error));
+  await renderFileList().catch(error => console.warn('[QA Kits] File list failed to render:', error));
 
   const lastFilledDisplay = await SFFAStorage.getLastFilledDisplay().catch(() => null);
   renderGeneratedData(lastFilledDisplay);
 
-  await renderLogs().catch(error => console.warn('[SFFA] Activity log failed to render:', error));
+  await renderLogs().catch(error => console.warn('[QA Kits] Activity log failed to render:', error));
 
   document.getElementById('addFileBtn').addEventListener('click', () => {
     document.getElementById('fileInput').click();
@@ -307,7 +311,7 @@ async function init() {
   document.getElementById('openSidePanelBanner').addEventListener('click', async () => {
     const tab = await window.SFFAExt.queryActiveTab();
     if (!tab?.windowId || !await window.SFFAExt.sidePanel?.open({ windowId: tab.windowId })) {
-      setExtensionContextBanner(true, 'Could not open the side panel. Open SmartForm AutoFill from the toolbar instead.');
+      setExtensionContextBanner(true, 'Could not open the side panel. Open QA Kits from the toolbar instead.');
     }
   });
   if (/Firefox/i.test(navigator.userAgent)) {
@@ -316,7 +320,7 @@ async function init() {
   }
 
   await firstTabRefresh;
-  await updateTargetTab().catch(error => console.warn('[SFFA] Tab detection failed:', error));
+  await updateTargetTab().catch(error => console.warn('[QA Kits] Tab detection failed:', error));
   restorePendingPick();
   if (hasExt()) {
     window.SFFAExt.tabs.onActivated?.addListener(() => scheduleTargetTabRefresh());
@@ -360,6 +364,8 @@ async function init() {
   });
   document.getElementById('fullQaModeButton').addEventListener('click', () => {
     document.getElementById('fullQaModeButton').setAttribute('aria-pressed', 'true');
+    // Untick the mode cards, so clicking any of them (Quick fill too) switches back from Full QA.
+    document.querySelectorAll('input[name="qaMode"]').forEach(radio => { radio.checked = false; });
     updateFillModePresentation();
   });
   setWorkflowStep('scan', 'ready', 'Scan the current page to review its fields and findings.');
@@ -419,23 +425,23 @@ async function init() {
   document.getElementById('stopPageActionBtn').addEventListener('click', onStopPageActionClick);
   document.getElementById('generateTestCasesBtn').addEventListener('click', onGenerateTestCasesClick);
   document.getElementById('exportTcCsvBtn').addEventListener('click', () => {
-    downloadTextFile('smartform-autofill-testcases.csv', 'text/csv', testCasesToCsv(lastTestCases));
+    downloadTextFile('qa-kits-testcases.csv', 'text/csv', testCasesToCsv(lastTestCases));
   });
   document.getElementById('exportTcMdBtn').addEventListener('click', () => {
-    downloadTextFile('smartform-autofill-testcases.md', 'text/markdown', testCasesToMarkdown(lastTestCases));
+    downloadTextFile('qa-kits-testcases.md', 'text/markdown', testCasesToMarkdown(lastTestCases));
   });
   document.getElementById('exportTcHtmlBtn').addEventListener('click', () => {
-    downloadTextFile('smartform-autofill-testcases.html', 'text/html', window.SFFAQAReport.toHtml(lastTestCaseReport || { cases: lastTestCases }));
+    downloadTextFile('qa-kits-testcases.html', 'text/html', window.SFFAQAReport.toHtml(lastTestCaseReport || { cases: lastTestCases }));
   });
   document.getElementById('printTcBtn').addEventListener('click', printTestCases);
   document.getElementById('exportTcJsBtn').addEventListener('click', () => {
-    downloadTextFile('smartform-autofill-testcases.spec.js', 'text/javascript', testCasesToPlaywright(lastTestCases));
+    downloadTextFile('qa-kits-testcases.spec.js', 'text/javascript', testCasesToPlaywright(lastTestCases));
   });
   document.getElementById('exportTcTsBtn').addEventListener('click', () => {
-    downloadTextFile('smartform-autofill-testcases.spec.ts', 'text/typescript', testCasesToPlaywright(lastTestCases));
+    downloadTextFile('qa-kits-testcases.spec.ts', 'text/typescript', testCasesToPlaywright(lastTestCases));
   });
   document.getElementById('exportTcPyBtn').addEventListener('click', () => {
-    downloadTextFile('smartform-autofill-testcases.py', 'text/x-python', testCasesToPlaywrightPython(lastTestCases));
+    downloadTextFile('qa-kits-testcases.py', 'text/x-python', testCasesToPlaywrightPython(lastTestCases));
   });
   document.getElementById('captureReportBtn').addEventListener('click', onCaptureReportClick);
   document.getElementById('applyNetworkProfileBtn').addEventListener('click', () => onNetworkProfileClick(document.getElementById('networkProfile').value));

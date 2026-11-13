@@ -1,4 +1,4 @@
-// SmartForm AutoFill page runtime — Shared run state, logging/progress, heartbeat and DOM-settle helpers.
+// QA Kits page runtime — Shared run state, logging/progress, heartbeat and DOM-settle helpers.
 // Generated from the former single-file content/content.js. Modules share state through
 // window.__SFFA_RT__ (RT) and each stays wrapped in its own function, so re-injection is safe.
 (function () {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SmartForm AutoFill</title>
+  <title>QA Kits</title>
   <link rel="stylesheet" href="../styles/tokens.css" />
   <link rel="stylesheet" href="popup.css" />
   <script src="icons.js"></script>
@@ -13,7 +13,7 @@
   <header class="header glass-strong">
     <div class="header-title">
       <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2.5 4.5 13.5h6.5l-1 8 8.5-11h-6.5l1-8Z" /></svg></span>
-      <div class="header-copy"><h1>SmartForm AutoFill</h1><div class="header-context"><button id="pageHostChip" class="host-chip" type="button" data-icon="globe" title="Target tab. Click to choose another tab when none is detected.">Finding your tab…</button><span id="envBadge" class="env-badge" data-state="unset" data-icon="info" hidden></span><span class="status-dot-host"><span id="pageStatusDot" class="status-dot" role="img" title="Blocked" aria-label="Blocked"></span><span id="pageStatusLabel">Blocked</span></span></div></div>
+      <div class="header-copy"><h1>QA Kits</h1><div class="header-context"><button id="pageHostChip" class="host-chip" type="button" data-icon="globe" title="Target tab. Click to choose another tab when none is detected.">Finding your tab…</button><span id="envBadge" class="env-badge" data-state="unset" data-icon="info" hidden></span><span class="status-dot-host"><span id="pageStatusDot" class="status-dot" role="img" title="Blocked" aria-label="Blocked"></span><span id="pageStatusLabel">Blocked</span></span></div></div>
     </div>
     <div class="header-actions">
       <button id="themeToggle" class="icon-btn theme-toggle" type="button" aria-label="Theme: system. Switch to light theme" title="Theme: system"><span id="themeModeIcon" class="theme-icon" data-icon="monitor" aria-hidden="true"></span></button>
@@ -49,7 +49,7 @@
     <section id="welcomeCard" class="card welcome-card" aria-labelledby="welcomeTitle" hidden>
       <div class="welcome-head">
         <span class="card-icon welcome-icon" data-icon="sparkles" aria-hidden="true"></span>
-        <div><h2 id="welcomeTitle">Welcome to SmartForm AutoFill</h2><p>Fill web forms with realistic <strong>fake</strong> test data in one click.</p></div>
+        <div><h2 id="welcomeTitle">Welcome to QA Kits</h2><p>Fill web forms with realistic <strong>fake</strong> test data in one click.</p></div>
       </div>
       <ol class="welcome-steps">
         <li><span class="welcome-num">1</span><span><strong>Open the form</strong> you want to test in this tab.</span></li>
@@ -123,7 +123,7 @@
             <span class="mode-copy"><span class="mode-name">Edge cases <span class="mode-warning">Limits</span></span><span class="mode-summary">Very short, very long and min/max values</span></span>
           </label>
         </fieldset>
-        <button id="fullQaModeButton" class="full-qa-choice" type="button" aria-pressed="false" data-icon="gauge"><span class="full-qa-text"><span class="full-qa-title">Full QA run</span><span class="full-qa-sub">Tries valid, wrong and edge-case data, then downloads a report</span></span></button>
+        <button id="fullQaModeButton" class="full-qa-choice" type="button" aria-pressed="false" data-icon="gauge"><span class="full-qa-text"><span class="full-qa-title">Full QA run</span><span class="full-qa-sub">Tries valid, wrong and edge-case data, then offers a report to download</span></span></button>
         <div id="modeDescription" class="mode-description" role="status" aria-live="polite">Fill detected fields with valid synthetic test data.</div>
 
         <div id="qaFieldScope" class="qa-field-scope hidden">
@@ -146,7 +146,7 @@
         </div>
 
         <div id="fullQaOptions" class="fullqa-options hidden">
-          <div class="fullqa-submit-hint">Runs Positive, Negative, then Boundary cases. Submission stays off unless explicitly enabled below.</div>
+          <div class="fullqa-submit-hint">Runs Valid data, Wrong data, then Edge cases, and puts the page's values back after each. Nothing is submitted unless you turn it on below.</div>
           <label class="checkbox-row"><input id="fullQaSubmitToggle" type="checkbox" /> Submit once after QA and capture the page response (irreversible site action)</label>
           <button class="help-tip fullqa-help" type="button" title="Full QA runs Positive, Negative, and Boundary cases without submitting or advancing. Native field values are restored after each case; custom widgets may be skipped. File fields are tested only with mapped files in Positive mode because browsers cannot restore an arbitrary FileList." aria-label="Help: isolated Full QA behavior">i</button>
         </div>
@@ -181,6 +181,7 @@
       <div id="fillStatus" class="fill-status hidden" role="status" aria-live="polite"></div>
       <div id="dynamicFieldNotice" class="hint-row file-hint hidden" aria-live="polite"></div>
       <div id="fillResult" class="fill-result hidden" aria-live="polite"></div>
+      <div id="fullQaDownloads" class="fill-result qa-downloads hidden" aria-live="polite"></div>
 
     </section>
 
@@ -196,7 +197,7 @@
         <button id="scanActionButtonsBtn" class="btn btn-large btn-secondary" data-requires-ext data-icon="target">Find page actions</button>
         <button id="pickElementBtn" class="btn btn-large btn-secondary" data-requires-ext data-icon="pointer">Pick element</button>
       </div>
-      <div class="hint-row"><span class="file-hint">Delete, Cancel, Log out and Pay buttons are always skipped.</span><button class="help-tip" type="button" title="Pick a page control directly, review matching elements, then run or stop the sequence." aria-label="Help: element picker and safe page actions">i</button></div>
+      <div class="hint-row"><span class="file-hint">Buttons such as Delete, Remove, Cancel, Back, Close, Reset, Log out, Pay and Checkout are always skipped.</span><button class="help-tip" type="button" title="Pick a page control directly, review matching elements, then run or stop the sequence." aria-label="Help: element picker and safe page actions">i</button></div>
       <div id="actionButtonPreview" class="action-preview hidden"></div>
       <section id="pickedElementCard" class="picked-card" aria-live="polite" aria-labelledby="pickedElementTitle" hidden></section>
 
@@ -283,7 +284,7 @@
         <span class="badge chromium-only" data-icon="info">Chrome / Edge only</span>
       </div>
       <div class="report-option"><strong>Page evidence (PNG)</strong><p>Full-page screenshot with console and network summaries.</p><button id="captureReportBtn" class="btn btn-large" data-requires-ext data-icon="camera">Capture page evidence (PNG)</button></div>
-      <div class="report-option"><strong>Full QA report (JSON / HTML)</strong><p>Choose the Full QA run mode on the Test tab; both formats download when it finishes.</p></div>
+      <div class="report-option"><strong>Full QA report (JSON / HTML)</strong><p>Run Full QA on the Test tab. When it finishes, pick the HTML report, JSON data or page screenshot to download.</p></div>
       <div class="hint-row"><span class="file-hint">Chrome may show its debugger notice during capture.</span><button class="help-tip" type="button" title="The screenshot includes console/network summaries. Chrome shows its standard debugger banner during capture; use Stop Capturing to detach." aria-label="Help: page evidence">i</button></div>
 
       <div id="captureStatusRow" class="capture-status-row hidden">
@@ -299,13 +300,13 @@
       <summary class="card-header collapsible-summary"><span class="card-icon" data-icon="settings" aria-hidden="true"></span><h2>Settings</h2></summary>
       <div class="setting-group">
         <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="freshDataToggle" checked /> Generate fresh data every run</label>
-        <div class="setting-helper">Create a new synthetic dataset for each fill.</div>
+        <div class="setting-helper">Quick fill and Valid data make new test data each time. Off: they reuse the last data. Full QA and Wrong data always make new data.</div>
         <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="captureActivityToggle" /> Capture activity during fill</label>
         <div class="setting-helper">Include console and network activity in a later report.</div>
         <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="autoFileMappingToggle" /> Automatic file mapping</label>
-        <div class="setting-helper">Suggest mappings only for empty categories; you confirm before they are saved.</div>
+        <div class="setting-helper">When exactly one file is stored, suggest the upload kinds it fits that have no file yet. You confirm before anything is saved.</div>
         <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="reuseMappedFileToggle" /> Reuse one mapped file across fields</label>
-        <div class="setting-helper">Off by default. When on, the same mapped file may be attached to each matching field.</div>
+        <div class="setting-helper">Off by default: every stored file is used once before any file is used again (when a form has more upload boxes than files, files are reused so no box stays empty). On: the same mapped file goes to every matching field.</div>
         <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="redactPathsToggle" checked /> Redact local paths in reports</label>
         <div class="setting-helper">Hide local user folders and extension IDs in captured report text.</div>
         <label class="checkbox-row switch-row"><input type="checkbox" class="switch" role="switch" id="reduceEffectsToggle" /> Reduce visual effects</label>
@@ -430,7 +431,7 @@
 
     <details class="card shortcut-guide collapsible-card">
       <summary class="card-header collapsible-summary"><span class="card-icon" data-icon="keyboard" aria-hidden="true"></span><h2>Shortcuts &amp; quick guide</h2></summary>
-      <p id="shortcutBinding"><span>Open SmartForm AutoFill:</span> <kbd id="actionShortcutChip">Loading…</kbd></p>
+      <p id="shortcutBinding"><span>Open QA Kits:</span> <kbd id="actionShortcutChip">Loading…</kbd></p>
       <p>Change it in your browser's extension shortcut settings: <a id="shortcutSettingsLink" href="chrome://extensions/shortcuts">chrome://extensions/shortcuts</a>.</p>
       <p>Workflow: add optional files → scan/fill → review → run a safe page action → generate/export test cases and evidence.</p>
     </details>
@@ -476,10 +477,10 @@
         <dt>Valid data</dt><dd>Correct values only, to confirm the form accepts good input.</dd>
         <dt>Wrong data</dt><dd>Bad values, to check the form shows clear error messages.</dd>
         <dt>Edge cases</dt><dd>Very short/long and min/max values, to check limits.</dd>
-        <dt>Full QA run</dt><dd>Tries all of the above in turn and downloads a JSON + HTML report.</dd>
+        <dt>Full QA run</dt><dd>Tries all of the above in turn, then shows buttons to download the HTML report, the JSON data and (when activity capture is on) a page screenshot — only the ones you pick.</dd>
       </dl>
       <h3>Is it safe?</h3>
-      <p>All values are fake. Nothing is submitted unless you turn that on. Page actions start in <em>Preview only</em> mode, and Delete, Cancel, Log out and Pay buttons are always skipped. Use test or staging sites, never production.</p>
+      <p>All values are fake. Nothing is submitted unless you turn that on. Page actions start in <em>Preview only</em> mode, and buttons such as Delete, Remove, Cancel, Back, Reset, Log out, Pay and Checkout are always skipped. Use test or staging sites, never production.</p>
       <h3>Something isn’t working?</h3>
       <ul class="help-faq">
         <li><strong>“Can’t read this page”</strong> – reload the website tab, then try again. Browser pages such as <code>chrome://</code> and the Web Store can’t be used.</li>

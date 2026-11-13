@@ -25,12 +25,12 @@ await rm(path.join(dist, 'manifest.json'), { force: true });
 await rm(path.join(dist, 'manifest.firefox.json'), { force: true });
 if (target === 'firefox') {
   const manifest = JSON.parse(await readFile(path.join(root, 'manifest.firefox.json'), 'utf8'));
-  manifest.browser_specific_settings.gecko.id = process.env.SFFA_GECKO_ID || manifest.browser_specific_settings.gecko.id;
+  manifest.browser_specific_settings.gecko.id = process.env.QAKITS_GECKO_ID || process.env.SFFA_GECKO_ID || manifest.browser_specific_settings.gecko.id;
   await writeFile(path.join(dist, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 } else {
   await cp(path.join(root, 'manifest.json'), path.join(dist, 'manifest.json'));
 }
-const zip = path.join(root, 'dist', `smart-form-auto-filler-${target}.zip`);
+const zip = path.join(root, 'dist', `qa-kits-${target}.zip`);
 await rm(zip, { force: true });
 const entries = await zipDirectory(dist, zip);
 console.log(`Built ${zip} (${entries} files)`);

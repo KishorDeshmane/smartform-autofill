@@ -1,6 +1,6 @@
-# SmartForm AutoFill 2.2.0
+# QA Kits 2.2.0
 
-SmartForm AutoFill is a browser extension for trying synthetic data in web forms and running page-side QA checks. It runs scans and form interactions in the current tab after you invoke it. Results are heuristic and should be reviewed.
+QA Kits is a browser extension for trying synthetic data in web forms and running page-side QA checks. It runs scans and form interactions in the current tab after you invoke it. Results are heuristic and should be reviewed.
 
 ## Features
 
@@ -24,14 +24,14 @@ Accessibility, security, spelling, link, selector-stability, and field checks ar
 
 1. Extract or clone this project.
 2. Open `chrome://extensions` in Chrome or `edge://extensions` in Edge.
-3. Enable **Developer mode**, choose **Load unpacked**, and select the `smart-form-auto-filler` directory that contains `manifest.json`.
+3. Enable **Developer mode**, choose **Load unpacked**, and select the project folder that contains `manifest.json`.
 4. Open a page you are authorized to test, then open the extension from the toolbar.
 
 The Chromium manifest defines both a popup and a side panel. The toolbar action opens the side panel when the browser supports the Side Panel API.
 
 ### Firefox
 
-1. Build the Firefox package: `npm install`, then `npm run build:firefox`. This creates `dist/firefox/` and `dist/smart-form-auto-filler-firefox.zip` with the Firefox manifest already in place.
+1. Build the Firefox package: `npm install`, then `npm run build:firefox`. This creates `dist/firefox/` and `dist/qa-kits-firefox.zip` with the Firefox manifest already in place.
 2. Open `about:debugging#/runtime/this-firefox` and choose **Load Temporary Add-on…**.
 3. Select `dist/firefox/manifest.json` (or the zip).
 
@@ -42,7 +42,7 @@ Firefox uses the popup. Screenshot/activity capture, network profiles, viewport 
 Firefox builds use the manifest gecko ID. Override it at build time without changing source manifests:
 
 ```powershell
-$env:SFFA_GECKO_ID = "smartform-autofill@your-domain.example"
+$env:QAKITS_GECKO_ID = "qa-kits@your-domain.example"
 npm run build:firefox
 ```
 
@@ -164,8 +164,8 @@ Requires Node.js 22 or later.
 npm install              # install dev dependencies (ESLint, jsdom, Playwright, axe-core)
 npm test                 # run the node:test + jsdom unit tests in tests/
 npm run lint             # ESLint over the whole project
-npm run build:chrome     # build dist/chrome and dist/smart-form-auto-filler-chrome.zip
-npm run build:firefox    # build dist/firefox and dist/smart-form-auto-filler-firefox.zip
+npm run build:chrome     # build dist/chrome and dist/qa-kits-chrome.zip
+npm run build:firefox    # build dist/firefox and dist/qa-kits-firefox.zip
 npm run verify:popup     # Playwright + axe accessibility check of the popup states
 npm run verify:glass     # layout/overflow/contrast matrix across widths and themes
 npm run verify:responsive # popup, side panel and Options at 9 widths: overflow, spilling, overlapping or squeezed text

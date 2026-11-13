@@ -1,4 +1,4 @@
-// SmartForm AutoFill — plain-language wording for generated test cases.
+// QA Kits — plain-language wording for generated test cases.
 // The generator decides WHICH checks apply (from the page); this file decides HOW each check is
 // written, so a client or business tester can read and run it without technical knowledge.
 // Each entry: { t: title, s: steps (after "Open the page"), e: expected result, d?: test data, n?: note }.

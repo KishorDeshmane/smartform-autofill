@@ -605,38 +605,72 @@
     return 'text';
   }
 
-  const NEGATIVE_SCENARIOS = {
-    email: ['invalid-email', 'abc@', '@test.com', 'test@@gmail.com'],
-    mobile: ['12345', '123456789', 'abcdefghij', '0000000000'],
-    text: ['', '   ', '<script>alert(1)</script>', "' OR '1'='1", 'A'.repeat(10000)],
-    longtext: ['', '   ', '<script>alert(1)</script>', "' OR '1'='1", 'A'.repeat(10000)],
-    number: ['-1', '0', 'abcXYZ', '!@#$%', '999999999999999'],
-    date: ['31-31-9999', '2099-12-31', '1800-01-01', '31/02/2024'],
-    password: ['abc', '12345678', 'password', 'Password', '        '],
-    url: ['example', 'htp://example.com', 'http//example.com', 'https://exa mple.com', 'javascript:alert(1)'],
-    name: ['12345', '@#$%&', 'A', '   ', '<b>Priya</b>'],
-    pincode: ['12345', '1234567', 'abcdef', '000000', '41 1001'],
-    pan: ['ABCDE1234', 'ABCDE12345', '12345ABCDE', 'ABCD@1234F', 'abcde1234f'],
-    aadhaar: ['12345678901', '1234567890123', 'abcdefghijkl', '000000000000'],
-    gst: ['27ABCDE1234F1Z', '27ABCDE1234F1Z55', 'ABCDE1234F1Z527', '27abcde1234f1z5'],
-    ifsc: ['SBIN012345', 'SBIN1234567', '1234SBIN567', 'SBIN0@12345']
+  // Wrong values per kind of field, with a plain name for each (same order). Names matter: caseExpectation
+  // treats some of them as "a correct form may accept this" (country code, decimal, emoji, …).
+  const NEGATIVE_CASES = {
+    email: [
+      ['invalid-email', 'missing @/domain'], ['abc@', 'incomplete domain'], ['@test.com', 'missing local part'],
+      ['test@@gmail.com', 'double @'], ['test @gmail.com', 'space inside'], ['test..user@gmail.com', 'two dots in a row'],
+      ['.test@gmail.com', 'starts with a dot'], ['test@gmail', 'no domain ending'], ['test@gmail.c', 'one-letter domain ending'],
+      ['test@gm_ail.com', 'underscore in domain']
+    ],
+    mobile: [
+      ['12345', 'too short'], ['123456789', 'too long'], ['abcdefghij', 'non-numeric'], ['0000000000', 'all zeros'],
+      ['1234567890', 'does not start with 6–9'], ['98765 4321O', 'letter O instead of zero'], ['-9876543210', 'minus sign'],
+      ['+91 98765 43210', 'with country code'], ['98765-43210', 'dashes inside']
+    ],
+    text: [
+      ['', 'empty (required-field check)'], ['   ', 'spaces only'], ['<script>alert(1)</script>', 'inert HTML-like text'],
+      ["' OR '1'='1", 'inert SQL-like text'], ['A'.repeat(10000), 'oversized text'], ['😀😀😀', 'emoji only'],
+      ['null', 'the word null'], ['  Test value  ', 'leading and trailing spaces']
+    ],
+    number: [
+      ['-1', 'negative'], ['0', 'zero'], ['abcXYZ', 'alphabetic'], ['!@#$%', 'special characters'],
+      ['999999999999999', 'very large number'], ['12abc', 'digits then letters'], ['1.5', 'decimal'],
+      ['1e5', 'exponent notation'], ['1,000', 'comma separator']
+    ],
+    date: [
+      ['31-31-9999', 'invalid date'], ['2099-12-31', 'future date'], ['1800-01-01', 'far-past date'], ['31/02/2024', 'wrong format'],
+      ['2024-13-01', 'month 13'], ['2023-02-29', '29 Feb in a non-leap year'], ['abcd', 'letters']
+    ],
+    password: [
+      ['abc', 'too short'], ['12345678', 'digits only'], ['password', 'common word'], ['Password', 'no number or symbol'],
+      ['        ', 'spaces only'], ['abcdefgh', 'letters only'], ['Ab@1', 'strong but too short']
+    ],
+    url: [
+      ['example', 'no scheme or domain ending'], ['htp://example.com', 'misspelt scheme'], ['http//example.com', 'missing colon'],
+      ['https://exa mple.com', 'space inside'], ['javascript:alert(1)', 'script link'], ['http://', 'scheme only'],
+      ['ftp://example.com', 'non-web scheme']
+    ],
+    name: [
+      ['12345', 'digits only'], ['@#$%&', 'symbols only'], ['A', 'single letter'], ['   ', 'spaces only (required-field check)'],
+      ['<b>Priya</b>', 'HTML-like text'], ['Priya123', 'letters and digits'], ['P'.repeat(300), 'very long name (300 letters)']
+    ],
+    pincode: [
+      ['12345', '5 digits'], ['1234567', '7 digits'], ['abcdef', 'letters'], ['000000', 'all zeros'], ['41 1001', 'space inside'],
+      ['011001', 'starts with 0'], ['411-001', 'dash inside']
+    ],
+    pan: [
+      ['ABCDE1234', 'too short'], ['ABCDE12345', 'digit instead of last letter'], ['12345ABCDE', 'wrong order'],
+      ['ABCD@1234F', 'special character'], ['abcde1234f', 'lowercase letters'], ['ABCDE 1234F', 'space inside'],
+      ['ABCDE1234FF', 'too long']
+    ],
+    aadhaar: [
+      ['12345678901', '11 digits'], ['1234567890123', '13 digits'], ['abcdefghijkl', 'letters'], ['000000000000', 'all zeros'],
+      ['012345678901', 'starts with 0'], ['123456789012', 'starts with 1'], ['2345-6789-0123', 'dashes inside']
+    ],
+    gst: [
+      ['27ABCDE1234F1Z', 'too short'], ['27ABCDE1234F1Z55', 'too long'], ['ABCDE1234F1Z527', 'wrong order'],
+      ['27abcde1234f1z5', 'lowercase letters'], ['99ABCDE1234F1Z5', 'state code 99 does not exist'], ['27ABCDE1234F1X5', '14th character not Z']
+    ],
+    ifsc: [
+      ['SBIN012345', 'too short'], ['SBIN1234567', '5th character not 0'], ['1234SBIN567', 'wrong order'],
+      ['SBIN0@12345', 'special character'], ['SBIN 012345', 'space inside'], ['sbin0123456', 'lowercase letters']
+    ]
   };
-  const NEGATIVE_LABELS = {
-    email: ['missing @/domain', 'incomplete domain', 'missing local part', 'double @'],
-    mobile: ['too short', 'too long', 'non-numeric', 'all zeros'],
-    text: ['empty (required-field check)', 'spaces only', 'inert HTML-like text', 'inert SQL-like text', 'oversized text'],
-    longtext: ['empty (required-field check)', 'spaces only', 'inert HTML-like text', 'inert SQL-like text', 'oversized text'],
-    number: ['negative', 'zero', 'alphabetic', 'special characters', 'very large number'],
-    date: ['invalid date', 'future date', 'far-past date', 'wrong format'],
-    password: ['too short', 'digits only', 'common word', 'no number or symbol', 'spaces only'],
-    url: ['no scheme or domain ending', 'misspelt scheme', 'missing colon', 'space inside', 'script link'],
-    name: ['digits only', 'symbols only', 'single letter', 'spaces only (required-field check)', 'HTML-like text'],
-    pincode: ['5 digits', '7 digits', 'letters', 'all zeros', 'space inside'],
-    pan: ['too short', 'digit instead of last letter', 'wrong order', 'special character', 'lowercase letters'],
-    aadhaar: ['11 digits', '13 digits', 'letters', 'all zeros'],
-    gst: ['too short', 'too long', 'wrong order', 'lowercase letters'],
-    ifsc: ['too short', '5th character not 0', 'wrong order', 'special character']
-  };
+  NEGATIVE_CASES.longtext = NEGATIVE_CASES.text;
+  const NEGATIVE_SCENARIOS = Object.fromEntries(Object.entries(NEGATIVE_CASES).map(([k, list]) => [k, list.map(([value]) => value)]));
+  const NEGATIVE_LABELS = Object.fromEntries(Object.entries(NEGATIVE_CASES).map(([k, list]) => [k, list.map(([, label]) => label)]));
 
   /** Generates candidate boundary values from the field type and declared constraints. */
   function boundaryValuesFor(field) {
@@ -835,7 +869,8 @@
     if (c.value === '' || /no option selected|none selected|^unchecked|cleared/.test(s)) return c.required ? 'reject' : 'accept';
     if (/spaces only/.test(s)) return c.required ? 'reject' : 'any';
     if (c.mode === 'negative') {
-      if (/html-like|sql-like|oversized|future date|far-past|common word|no number or symbol|lowercase/.test(s)) return 'any';
+      // Values a correct form may still accept: report what happened, never call it a failure.
+      if (/html-like|sql-like|oversized|future date|far-past|common word|no number or symbol|lowercase|emoji|the word null|leading and trailing|with country code|dashes inside|decimal|exponent|comma separator|non-web scheme|very long name|no domain ending/.test(s)) return 'any';
       return 'reject';
     }
     if (/pattern candidate/.test(s)) return 'any';
@@ -889,6 +924,10 @@
       const expected = caseExpectation(c);
       const base = { field: c.field, scenario: c.scenario, value: c.value, category: c.category, expected };
       if (c.outcome === 'blocked') {
+        // Colour pickers and sliders always hold a value: the browser cannot make them empty. Not a form bug.
+        if (expected === 'accept' && String(c.value ?? '') === '' && ['color', 'range'].includes(c.element?.type)) {
+          return { ...base, result: 'pass', note: 'This kind of box always has a value; the browser does not allow it to be empty' };
+        }
         return expected === 'accept'
           ? { ...base, result: 'fail', note: 'The browser refused a value that should be allowed' }
           : { ...base, result: 'pass', note: 'Browser blocked this value' };
@@ -1078,8 +1117,10 @@
     });
 
     const ERROR_SELECTOR = '.error, .invalid, .is-invalid, .has-error, .field-error, .invalid-feedback, [role="alert"]';
+    // Pop-up calendars announce the month (e.g. "November 2026") in alert regions; that is not an error.
+    const CALENDAR = '[class*="datepicker"], [class*="calendar"], .ui-datepicker, .pika-single, .daterangepicker, .MuiPickersPopper-root';
     document.querySelectorAll(ERROR_SELECTOR).forEach(el => {
-      if (!isVisible(el)) return;
+      if (!isVisible(el) || el.closest(CALENDAR)) return;
       const text = (el.textContent || '').trim();
       if (text && text.length < 200) push(text, 'error-class');
     });
@@ -1249,6 +1290,7 @@
     scenarioPassCount,
     scenarioValueFor,
     captureDetectedState,
+    fieldLabel,
     restoreDetectedState,
     detectValidationErrors,
     verifyFilledFields,
