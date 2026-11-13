@@ -1,4 +1,4 @@
-/* SmartForm AutoFill — options page. Colours come from ../styles/tokens.css only. */
+/* QA Kits — options page. Colours come from ../styles/tokens.css only. */
 *, *::before, *::after { box-sizing: border-box; }
 html { background: var(--bg); scroll-behavior: smooth; scroll-padding-top: 80px; }
 body {

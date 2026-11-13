@@ -129,7 +129,7 @@ const FILL_MODE_DESCRIPTIONS = {
   positive: 'Fills the fields you pick with correct values.',
   negative: 'Fills the fields you pick with wrong values to test error messages.',
   boundary: 'Fills the fields you pick with very short, very long and min/max values.',
-  fullqa: 'Tries valid, wrong and edge-case data, then downloads a report. Nothing is submitted unless you turn it on.'
+  fullqa: 'Tries valid, wrong and edge-case data, then offers the report to download. Nothing is submitted unless you turn it on.'
 };
 const FILL_BUTTON_LABELS = {
   normal: 'Fill the form', positive: 'Fill with valid data', negative: 'Fill with wrong data',
@@ -140,7 +140,7 @@ const NEXT_STEP_HINTS = {
   positive: 'Next: check that the form accepted the values without errors.',
   negative: 'Next: check that the page shows clear error messages.',
   boundary: 'Next: check how the page handled the limits.',
-  fullqa: 'Your report was downloaded. Open the Output tab for the summary.'
+  fullqa: 'Download the report you need with the buttons below. Open the Output tab for the summary.'
 };
 
 /** Updates labels and controls to match the selected fill mode. */
@@ -234,7 +234,7 @@ function beginFillUi(mode, activity) {
   button.classList.remove('is-success', 'is-error');
   button.classList.add('is-running');
   button.setAttribute('aria-busy', 'true');
-  setActionButtonLabel(button, mode === 'fullqa' ? 'Running full QA...' : mode === 'positive' ? 'Running positive tests...' : mode === 'negative' ? 'Running negative tests...' : mode === 'boundary' ? 'Running boundary tests...' : 'Filling form...');
+  setActionButtonLabel(button, mode === 'fullqa' ? 'Running full QA...' : mode === 'positive' ? 'Filling valid data...' : mode === 'negative' ? 'Trying wrong data...' : mode === 'boundary' ? 'Trying edge cases...' : 'Filling form...');
   setWorkflowStep('fill', 'running', 'The selected run is in progress.');
   const fullQaButton = document.getElementById('fullQaModeButton');
   if (fullQaButton) fullQaButton.disabled = true;
@@ -297,9 +297,9 @@ function updateFullQaProgress(message) {
   const phaseNames = {
     detecting: 'Analyzing',
     filling: 'Filling',
-    positive: 'Positive',
-    negative: 'Negative',
-    boundary: 'Boundary',
+    positive: 'Valid data',
+    negative: 'Wrong data',
+    boundary: 'Edge cases',
     verifying: 'Validating',
     validating: 'Validating',
     advancing: 'Submitting',
@@ -328,7 +328,7 @@ function renderFillResult(summary, mode = 'normal') {
     + summary.checkboxesFilled + summary.filesUploaded;
   const { h } = window.SFFADom;
   el.replaceChildren(
-    h('div', { class: 'fill-result-title', 'data-icon': 'checkCircle', text: mode === 'positive' ? 'Positive testing completed' : 'Form fill completed' }),
+    h('div', { class: 'fill-result-title', 'data-icon': 'checkCircle', text: mode === 'positive' ? 'Valid data filled' : 'Form fill completed' }),
     resultLine('Fields filled / attached', filled, 'success', 'Filled'),
     resultLine('File fields attached', summary.filesUploaded, summary.filesUploaded ? 'success' : null, 'Attached'),
     resultLine('Fields skipped', summary.skipped.length, summary.skipped.length ? 'warning' : null, 'Skipped')
@@ -411,7 +411,7 @@ function isFieldScopedMode(mode) {
 /** Appends field verification and validation messages to a fill result panel. */
 function appendVerificationPanel(container, verification, validationErrors) {
   if (!verification && !(validationErrors && validationErrors.length)) return;
-  try { applyFieldResults(container, verification); } catch (error) { console.warn('[SFFA] Could not show per-field results:', error); }
+  try { applyFieldResults(container, verification); } catch (error) { console.warn('[QA Kits] Could not show per-field results:', error); }
   const { h } = window.SFFADom;
   if (verification) {
     container.appendChild(resultLine('Verified accepted', verification.pass, 'success', 'Verified'));
@@ -973,7 +973,7 @@ function buildSecurityScanReportText(scan) {
   try { when = new Date(scan.scannedAt).toLocaleString(); } catch (_) { /* keep ISO text */ }
   const line = '-'.repeat(60);
   const lines = [
-    'SECURITY SCAN REPORT — SmartForm AutoFill',
+    'SECURITY SCAN REPORT — QA Kits',
     line,
     `Page:        ${scan.title ? `${scan.title} — ` : ''}${scan.url}`,
     `Scanned:     ${when}`,
@@ -1257,7 +1257,7 @@ async function runQaModeFill(mode) {
   const btn = document.getElementById('fillFormBtn');
   const resultEl = document.getElementById('fillResult');
   const startedAt = performance.now();
-  beginFillUi(mode, mode === 'negative' ? 'Running negative validation cases' : 'Running boundary validation cases');
+  beginFillUi(mode, mode === 'negative' ? 'Trying wrong values on the fields' : 'Trying edge-case values on the fields');
 
   try {
     const tab = await getActiveTab();
@@ -1280,7 +1280,7 @@ async function runQaModeFill(mode) {
 
     if (response.summary.total === 0) {
       await updateQaDashboard({ fields: 0, passed: 0, failed: 0, skipped: response.summary.skipped?.length || 0,
-        issues: response.validationErrors?.length || 0, durationMs: performance.now() - startedAt }, `${mode} tests`, response);
+        issues: response.validationErrors?.length || 0, durationMs: performance.now() - startedAt }, mode === 'negative' ? 'Wrong data' : 'Edge cases', response);
       renderEmptyFillState(resultEl, true);
       finishFillUi('warning', 'No fields matched the selected scope.', mode);
       return;
@@ -1292,7 +1292,7 @@ async function runQaModeFill(mode) {
       skipped: response.summary.skipped.length + (response.verification?.warn || 0),
       issues: response.validationErrors?.length || 0,
       durationMs: performance.now() - startedAt
-    }, `${mode} tests`, response);
+    }, mode === 'negative' ? 'Wrong data' : 'Edge cases', response);
 
     const { h } = window.SFFADom;
     const results = response.summary.results || [];
@@ -1301,7 +1301,10 @@ async function runQaModeFill(mode) {
     resultEl.replaceChildren(
       h('div', { class: 'fill-result-title', text: mode === 'negative' ? 'Wrong data test completed' : 'Edge case test completed' }),
       h('p', { class: 'scan-detail-note', text: response.summary.style === 'one-at-a-time'
-        ? `${results.length} case(s) on ${response.summary.fieldsTested} field(s), one field at a time: the other fields had correct values. The original values were put back.`
+        ? `${results.length} case(s) on ${response.summary.fieldsTested} field(s), one field at a time: the other fields had correct values. ` +
+          (response.summary.notPutBack?.length
+            ? `The original values were put back, except these dropdowns, which keep a correct choice: ${response.summary.notPutBack.join(', ')}.`
+            : 'The original values were put back.')
         : `${results.length} case(s) in ${response.summary.rounds || 1} round(s), all fields together. The original values were put back.` }),
       resultLine('Passed', counts.pass || 0, 'success', 'Pass'),
       ...(counts.warn ? [resultLine('No error shown yet', counts.warn, 'warning', 'Check')] : []),
@@ -1364,11 +1367,51 @@ function renderScenarioResults(results) {
   return wrap;
 }
 
+const FULL_QA_REPORT_KEY = 'sffaLastFullQaReport';
+
+/**
+ * Shows download buttons for the last Full QA report. Nothing is downloaded until the user picks a file.
+ * `saved` = { tabUrl, savedAt, report, screenshot?, screenshotName? }; null hides the card.
+ */
+function renderFullQaDownloads(saved) {
+  const box = document.getElementById('fullQaDownloads');
+  if (!box) return;
+  if (!saved?.report) { box.classList.add('hidden'); box.replaceChildren(); return; }
+  const { h } = window.SFFADom;
+  const base = `sffa-full-qa-report-${saved.savedAt || Date.now()}`;
+  const button = (id, text, onClick) => {
+    const b = h('button', { id, class: 'btn btn-small', type: 'button', 'data-icon': 'download', text });
+    b.addEventListener('click', onClick);
+    return b;
+  };
+  const buttons = [
+    button('fullQaHtmlBtn', 'HTML report', () => downloadTextFile(`${base}.html`, 'text/html', window.SFFAQAReport.toHtml(saved.report))),
+    button('fullQaJsonBtn', 'JSON data', () => downloadTextFile(`${base}.json`, 'application/json', JSON.stringify(saved.report, null, 2)))
+  ];
+  if (saved.screenshot) {
+    buttons.push(button('fullQaShotBtn', 'Page screenshot', () => downloadDataUrl(saved.screenshotName || `${base}.png`, saved.screenshot)));
+  }
+  const when = saved.savedAt ? new Date(saved.savedAt).toLocaleString() : '';
+  box.replaceChildren(
+    h('div', { class: 'fill-result-title', 'data-icon': 'download', text: 'Download the Full QA report' }),
+    h('p', { class: 'scan-detail-note', text: `${when ? `Run on ${when}. ` : ''}Pick the files you want; nothing is downloaded until you click.` }),
+    h('div', { class: 'page-review-actions' }, buttons)
+  );
+  box.classList.remove('hidden');
+}
+
+/** Shows the last Full QA report's download buttons again when the popup opens on the same page. */
+async function restoreFullQaDownloads(tab) {
+  const saved = await window.SFFAExt.store.get(FULL_QA_REPORT_KEY, null);
+  renderFullQaDownloads(saved && tab?.url && saved.tabUrl === tab.url ? saved : null);
+}
+
 /** Coordinates the full QA run, optional activity capture, and report rendering. */
 async function runFullQaRunFlow() {
   const btn = document.getElementById('fillFormBtn');
   const startedAt = performance.now();
   beginFillUi('fullqa', 'Full QA · Analyzing');
+  renderFullQaDownloads(null); // the previous report's buttons come back when this run finishes
   const resultEl = document.getElementById('fillResult');
 
   try {
@@ -1406,7 +1449,8 @@ async function runFullQaRunFlow() {
     let captureCounts = null;
     if (captureEnabled) {
       try {
-        capture = await sendRuntimeMessage({ type: 'SFFA_CAPTURE_REPORT', tabId: tab.id });
+        // Keep the screenshot for the download buttons instead of saving it straight away.
+        capture = await sendRuntimeMessage({ type: 'SFFA_CAPTURE_REPORT', tabId: tab.id, download: false });
         if (capture?.ok) {
           captureCounts = await sendRuntimeMessage({ type: 'SFFA_CAPTURE_COUNTS', tabId: tab.id });
         }
@@ -1445,7 +1489,7 @@ async function runFullQaRunFlow() {
       accessibilityIssues: response.accessibilityCount ?? null,
       consoleErrors: capture && capture.ok && captureCounts?.ok ? captureCounts.consoleErrors : null,
       networkErrors: capture && capture.ok && captureCounts?.ok ? captureCounts.failedRequests : null,
-      screenshots: capture && capture.ok ? ['sffa-report-*.png (saved alongside this file)'] : [],
+      screenshots: capture?.ok && capture.filename ? [`${capture.filename} (download it with "Page screenshot")`] : [],
       submit: { ...response.submitResult },
       outcome: response.outcome,
       steps: response.steps,
@@ -1461,8 +1505,16 @@ async function runFullQaRunFlow() {
       }
     };
     const safeQaReport = window.SFFAQAReport.sanitize(qaReport);
-    downloadTextFile(`sffa-full-qa-report-${Date.now()}.json`, 'application/json', JSON.stringify(safeQaReport, null, 2));
-    downloadTextFile(`sffa-full-qa-report-${Date.now()}.html`, 'text/html', window.SFFAQAReport.toHtml(safeQaReport));
+    // No automatic download: the report is kept (also after the popup closes) and offered as buttons.
+    const savedReport = {
+      tabUrl: tab.url,
+      savedAt: Date.now(),
+      report: safeQaReport,
+      ...(capture?.ok && capture.imageDataUrl ? { screenshot: capture.imageDataUrl, screenshotName: capture.filename } : {})
+    };
+    try { await window.SFFAExt.store.set(FULL_QA_REPORT_KEY, savedReport); }
+    catch (e) { await SFFALogger.log(`Could not keep the report after the popup closes: ${e.message}`, 'warn'); }
+    renderFullQaDownloads(savedReport);
 
     const { h } = window.SFFADom;
     if (fieldsDetected === 0) {
@@ -1470,7 +1522,7 @@ async function runFullQaRunFlow() {
         score: null, durationMs: performance.now() - startedAt }, 'full QA', response);
       renderEmptyFillState(resultEl, false);
       finishFillUi('warning', 'No fillable fields were detected.');
-      showToast('Full QA found no fillable fields; report downloaded');
+      showToast('Full QA found no fillable fields; download the report below');
       return;
     }
     resultEl.classList.remove('hidden');
@@ -1500,7 +1552,7 @@ async function runFullQaRunFlow() {
       'fullqa'
     );
     await renderLogs();
-    showToast('Full QA modes complete — report downloaded');
+    showToast('Full QA complete — download the report below');
   } catch (err) {
     await SFFALogger.log(`⚠ ${err.message}`, 'error');
     finishFillUi('error', `Full QA could not complete: ${err.message}`, 'fullqa', true);
@@ -1532,7 +1584,7 @@ async function onFillFormClick() {
 
   const btn = document.getElementById('fillFormBtn');
   const startedAt = performance.now();
-  beginFillUi(mode, mode === 'positive' ? 'Running positive input checks' : 'Filling detected form fields');
+  beginFillUi(mode, mode === 'positive' ? 'Filling valid data in the chosen fields' : 'Filling detected form fields');
 
   try {
     const settings = await SFFAStorage.getSettings();
@@ -1583,7 +1635,7 @@ async function onFillFormClick() {
     if (response.summary.total === 0) {
       await updateQaDashboard({ fields: 0, passed: 0, failed: 0, skipped: response.summary.skipped?.length || 0,
         issues: response.validationErrors?.length || 0, durationMs: performance.now() - startedAt },
-      mode === 'positive' ? 'positive testing' : 'fill', response);
+      mode === 'positive' ? 'Valid data' : 'Quick fill', response);
       renderEmptyFillState(document.getElementById('fillResult'), !!fieldScope);
       finishFillUi('warning', fieldScope ? 'No fields matched the selected scope.' : 'No fillable fields were detected.');
       return;

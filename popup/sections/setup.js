@@ -427,7 +427,7 @@ async function onCaptureReportClick() {
 
 window.SFFAExt.onMessage((message, sender) => {
   try {
-  if (isSummaryDebugEnabled()) console.debug('[SFFA popup runtime message]', message);
+  if (isSummaryDebugEnabled()) console.debug('[QA Kits popup runtime message]', message);
       if (['SFFA_PROGRESS', 'SFFA_QA_RUN_PROGRESS', 'SFFA_SCAN_PROGRESS', 'SFFA_RUN_HEARTBEAT', 'SFFA_DYNAMIC_FIELDS', 'SFFA_BUTTON_SEQUENCE_PROGRESS', 'SFFA_PICKED_PROGRESS'].includes(message?.type)) {
         notePageActivity(sender?.tab?.id);
       }

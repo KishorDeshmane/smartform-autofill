@@ -23,7 +23,7 @@
 
   /** Logs an extension API error and signals storage failures to the logger when present. */
   function logError(message, error) {
-    console.error(`[SFFA] ${message}`, error);
+    console.error(`[QA Kits] ${message}`, error);
     if (message.startsWith('Storage ')) root.__SFFA_STORAGE_ERROR__?.(message);
   }
 

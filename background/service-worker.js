@@ -5,7 +5,7 @@ if (typeof importScripts === 'function') {
   // Screenshot/capture support is optional. If it fails to load, everything else (storage,
   // messaging, filling) must keep working, so it is imported separately and guarded.
   try { importScripts('./report-capture.js'); }
-  catch (error) { console.error('[SFFA] Capture module failed to load; capture features are disabled.', error); }
+  catch (error) { console.error('[QA Kits] Capture module failed to load; capture features are disabled.', error); }
 }
 
 const REPORT_CAPTURE_UNAVAILABLE = {
@@ -19,11 +19,11 @@ async function runStartupMigration(reason) {
   try {
     const result = await SFFAStorage.migrateLegacyFiles();
     if (result.migrated > 0 || result.failed > 0) {
-      console.log(`[SFFA] File storage migration (${reason}): migrated ${result.migrated}, failed ${result.failed}`, result.errors || []);
+      console.log(`[QA Kits] File storage migration (${reason}): migrated ${result.migrated}, failed ${result.failed}`, result.errors || []);
     }
     return result;
   } catch (e) {
-    console.error('[SFFA] File storage migration failed to run:', e);
+    console.error('[QA Kits] File storage migration failed to run:', e);
     return { ok: false, migrated: 0, failed: 0, errors: [{ error: e.message }] };
   }
 }
@@ -181,7 +181,7 @@ self.SFFAExt.onMessage((message, sender, sendResponse) => {
 
   if (message.type === 'SFFA_CAPTURE_REPORT') {
     if (!self.SFFAReportCapture) { sendResponse(REPORT_CAPTURE_UNAVAILABLE); return false; }
-    self.SFFAReportCapture.captureFullPageReport(message.tabId)
+    self.SFFAReportCapture.captureFullPageReport(message.tabId, { download: message.download !== false })
       .then((result) => sendResponse(result))
       .catch((err) => sendResponse({ ok: false, error: err.message }));
     return true;

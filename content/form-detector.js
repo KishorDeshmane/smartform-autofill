@@ -354,6 +354,10 @@
       el.getAttribute('data-format')
     ].filter(Boolean).map(v => v.trim().toLowerCase());
 
+    // A date already in the box shows the expected format, e.g. "11 Nov 2026" (React date pickers).
+    const current = (el.value || '').trim();
+    if (/^\d{1,2} [A-Za-z]{3} \d{4}$/.test(current)) return { tokens: ['dd', 'mon', 'yyyy'], separator: ' ' };
+    if (/^[A-Za-z]{3} \d{1,2}, \d{4}$/.test(current)) return { tokens: ['mon', 'dd,', 'yyyy'], separator: ' ' };
     for (const ph of candidates) {
       let m = ph.match(/^(dd|mm|yyyy|yy)([/\-. :])(dd|mm|yyyy|yy)\2(dd|mm|yyyy|yy)$/);
       if (m) return { tokens: [m[1], m[3], m[4]], separator: m[2] };
@@ -373,6 +377,15 @@
     }
     return null;
   }
+
+  /** Field types that take one short value; a textarea is never one of these. */
+  const SHORT_VALUE_TYPES = new Set(['landline', 'mobile', 'alternateMobile', 'emergencyContactNumber', 'pinCode', 'age',
+    'cinNumber', 'llpinNumber', 'bankAccountNumber', 'ifscCode', 'gstNumber', 'creditCardNumber', 'iban', 'epfNumber', 'esiNumber',
+    'vehicleNumber', 'panNumber', 'identityNumber', 'dateOfBirth', 'validUntil', 'issueDate', 'registrationDate', 'incorporationDate',
+    'effectiveDate', 'startDate', 'endDate', 'numberOfTowers', 'totalFloors', 'totalUnits']);
+
+  /** Pop-up calendars of date-picker libraries: their month/year boxes are not form fields. */
+  const DATEPICKER_POPUP = '.react-datepicker__month-container, .react-datepicker-popper, .react-datepicker__header, .flatpickr-calendar, .ui-datepicker, .datepicker-dropdown, .pika-single, .daterangepicker, .mat-datepicker-content, .MuiPickersPopper-root';
 
   /** Checks visibility through ancestors, computed style, and the element's rendered box. */
   function isVisible(el) {
@@ -503,8 +516,18 @@
 
     queryAll(textSelectors).forEach(el => {
       if (!isVisible(el) || isHoneypot(el) || el.matches(':disabled') || el.readOnly || el.getAttribute('aria-disabled') === 'true') return;
-      const classification = classifyField(el, FIELD_KEYWORDS);
-      const dateFormat = detectDatePlaceholderFormat(el);
+      if (el.closest(DATEPICKER_POPUP)) return; // a calendar's own month/year boxes, not form fields
+      let classification = classifyField(el, FIELD_KEYWORDS);
+      // An email box whose placeholder is "name@example.com" must not become a name field.
+      const emailHint = el.type === 'email' || /@/.test(el.getAttribute('placeholder') || '') || /e-?mail/i.test(`${el.id} ${el.name}`);
+      if (emailHint && classification?.type !== 'email') classification = { type: 'email', score: Math.max(0.9, classification?.score || 0) };
+      // A multi-line answer box is never a phone, PIN or ID box, even when its question says "mobile coverage".
+      if (el.tagName === 'TEXTAREA' && SHORT_VALUE_TYPES.has(classification?.type)) classification = null;
+      let dateFormat = detectDatePlaceholderFormat(el);
+      // A text box called "date" with no format hint: use a day equal to the month, so DD/MM and MM/DD read the same.
+      if (!dateFormat && !classification && el.tagName === 'INPUT' && /\bdate\b|datepicker|date-picker/i.test(`${el.id} ${el.name} ${el.className} ${(el.labels?.[0]?.textContent || '')}`)) {
+        dateFormat = { tokens: ['dd', 'mm', 'yyyy'], separator: '/', assumed: true };
+      }
       results.text.push({
         element: el,
         type: classification ? classification.type : (dateFormat ? 'genericDate' : null),
@@ -546,6 +569,7 @@
     });
 
     queryAll('select').forEach(el => {
+      if (el.closest(DATEPICKER_POPUP)) return;
       if (!isVisible(el) || isHoneypot(el)) return;
       const classification = classifyField(el, FIELD_KEYWORDS);
       results.select.push({

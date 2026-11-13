@@ -1,10 +1,10 @@
-// SmartForm AutoFill page runtime — Form fill and field-scoped QA fill runs.
+// QA Kits page runtime — Form fill and field-scoped QA fill runs.
 // Generated from the former single-file content/content.js. Modules share state through
 // window.__SFFA_RT__ (RT) and each stays wrapped in its own function, so re-injection is safe.
 (function () {
   if (window.__SFFA_RT_SKIP__) return;
   const RT = window.__SFFA_RT__;
-  if (!RT) throw new Error('SmartForm AutoFill: content/runtime/core.js must load first.');
+  if (!RT) throw new Error('QA Kits: content/runtime/core.js must load first.');
 
   async function autoExpandCollapsedSections(log) {
     const EXPAND_LABELS = ['expand all', 'show all', 'expand all sections'];
@@ -285,12 +285,32 @@
     const validationErrors = [];
     const seenErrors = new Set();
     const summary = { total: 0, applied: 0, blocked: 0, limited: 0, skipped: [], scenarios: [], rounds: 0, style: 'one-at-a-time', fieldsTested: 0 };
+    let customBefore = [];
     try {
       // 1. Correct data everywhere, so an error can only come from the field under test.
       const testData = await window.SFFADataGenerator.generateFreshTestData(settings);
+      // Custom dropdowns get a correct choice too, but a page-made list cannot be set back: note what they showed.
+      // A type-to-search input shows its choice next to it, in the surrounding box.
+      const shownIn = el => el.tagName === 'INPUT' ? (el.closest('[class*="-container"], [class*="select"]') || el.parentElement) : el;
+      const typeToSearch = el => el.tagName === 'INPUT' && (el.getAttribute('role') === 'combobox' || el.hasAttribute('aria-autocomplete') || /^react-select-\d+-input$/.test(el.id || ''));
+      // Include switched-off ones too (a City box that opens once a State is chosen).
+      const inputs = new Set([
+        ...(firstDetected.customDropdowns || []).map(field => field.element),
+        ...(firstDetected.text || []).map(field => field.element).filter(typeToSearch),
+        ...document.querySelectorAll('input[role="combobox"], input[aria-autocomplete]')
+      ]);
+      const boxes = new Map();
+      for (const el of inputs) { const box = shownIn(el); if (box && !boxes.has(box)) boxes.set(box, el); }
+      customBefore = [...boxes].map(([box, el]) => {
+        const text = (box.textContent || '').replace(/\s+/g, ' ').trim();
+        const prompt = text.replace(/^(?:please\s+)?(?:select|choose|pick)\s+(?:an?\s+|the\s+)?/i, '');
+        return { box, text, label: prompt && prompt.length <= 40 ? prompt : engine.fieldLabel({ element: el }) };
+      });
       await RT.log('Filling every field with correct data first…', 'info');
       await window.SFFAFormFiller.fillEntireForm(noFiles(firstDetected), testData, [], {}, logger, {
-        settings, isolatedMode: true, rescan: () => noFiles(detectScoped()), isCancelled: () => run.cancelled
+        settings, isolatedMode: true, rescan: () => noFiles(detectScoped()), isCancelled: () => run.cancelled,
+        // Calendar-only date boxes: save their (empty) value so the final restore clears them again.
+        rememberBeforeFill: el => original.state.push(...engine.captureDetectedState({ text: [{ element: el }] }).state)
       });
       await RT.waitForDomSettle({ debounceMs: 200, maxWaitMs: 1500 });
       const validDetected = detectScoped();
@@ -329,13 +349,23 @@
       }
     } finally {
       await engine.restoreDetectedState(original, logger).catch(() => {});
+      // Close a calendar or list left open by the last field.
+      const active = document.activeElement;
+      if (active && active !== document.body) {
+        active.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        active.blur?.();
+      }
     }
+    summary.notPutBack = customBefore
+      .filter(item => item.box.isConnected && (item.box.textContent || '').replace(/\s+/g, ' ').trim() !== item.text)
+      .map(item => item.label);
     const counts = results.reduce((all, r) => ({ ...all, [r.result]: (all[r.result] || 0) + 1 }), {});
     summary.results = results;
     summary.counts = counts;
     await RT.log(
       `${mode === 'negative' ? 'Wrong data' : 'Edge case'} run (one field at a time): ${results.length} case(s) on ${summary.fieldsTested} field(s) — ` +
-      `${counts.pass || 0} passed, ${counts.warn || 0} with no error shown, ${counts.fail || 0} failed. Original values restored.`,
+      `${counts.pass || 0} passed, ${counts.warn || 0} with no error shown, ${counts.fail || 0} failed. ` +
+      (summary.notPutBack.length ? `Original values restored, except these dropdowns, which keep a correct choice: ${summary.notPutBack.join(', ')}.` : 'Original values restored.'),
       counts.fail ? 'warn' : 'success'
     );
     const verification = {

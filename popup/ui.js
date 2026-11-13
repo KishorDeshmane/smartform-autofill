@@ -150,7 +150,7 @@ function setExtensionContextBanner(isAvailable, message = '') {
   if (messageEl) messageEl.textContent = priority === 'no-tab'
     ? 'Open a website with a form to get started'
     : priority === 'needs-access'
-      ? (/tab list/i.test(message) ? 'Allow access so SmartForm AutoFill can list your open website tabs.' : 'Allow SmartForm AutoFill to read this tab so it can fill the form.')
+      ? (/tab list/i.test(message) ? 'Allow access so QA Kits can list your open website tabs.' : 'Allow QA Kits to read this tab so it can fill the form.')
       : priority === 'cannot-read'
         ? 'Can’t read this page yet. Reload the tab, then try again.'
         : 'Page ready';
@@ -393,7 +393,7 @@ function debugSummary(source, raw) {
   }
   const time = new Date().toLocaleTimeString();
   const json = JSON.stringify(raw ?? null);
-  console.debug('[SFFA summary]', { time, source, raw });
+  console.debug('[QA Kits summary]', { time, source, raw });
   if (line) {
     line.textContent = `last update: ${time}, source: ${source}, raw: ${json}`;
     line.classList.remove('hidden');

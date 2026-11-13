@@ -1,10 +1,10 @@
-// SmartForm AutoFill page runtime — On-page element picker and picked-element click runs.
+// QA Kits page runtime — On-page element picker and picked-element click runs.
 // Generated from the former single-file content/content.js. Modules share state through
 // window.__SFFA_RT__ (RT) and each stays wrapped in its own function, so re-injection is safe.
 (function () {
   if (window.__SFFA_RT_SKIP__) return;
   const RT = window.__SFFA_RT__;
-  if (!RT) throw new Error('SmartForm AutoFill: content/runtime/core.js must load first.');
+  if (!RT) throw new Error('QA Kits: content/runtime/core.js must load first.');
 
   let pickerState = null;
 

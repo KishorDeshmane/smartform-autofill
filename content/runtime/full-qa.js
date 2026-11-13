@@ -1,10 +1,10 @@
-// SmartForm AutoFill page runtime — Full QA: isolated Positive/Negative/Boundary suite and optional submit.
+// QA Kits page runtime — Full QA: isolated Positive/Negative/Boundary suite and optional submit.
 // Generated from the former single-file content/content.js. Modules share state through
 // window.__SFFA_RT__ (RT) and each stays wrapped in its own function, so re-injection is safe.
 (function () {
   if (window.__SFFA_RT_SKIP__) return;
   const RT = window.__SFFA_RT__;
-  if (!RT) throw new Error('SmartForm AutoFill: content/runtime/core.js must load first.');
+  if (!RT) throw new Error('QA Kits: content/runtime/core.js must load first.');
 
   function sleepMs(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
@@ -160,9 +160,32 @@
     let cancelled = false;
     let stopReason = 'All QA modes completed with the form restored.';
 
+    /**
+     * Wrong and edge values are judged like the Wrong data / Edge cases modes: an error shown or a value the
+     * browser blocks is a pass; a value that should be refused but shows no error is "check"; failed only when wrong.
+     */
+    const judgeWrongValues = cases => {
+      const check = { pass: 0, warn: 0, fail: 0, details: [] };
+      for (const r of window.SFFAQAEngine.evaluateScenarioCases(cases)) {
+        const status = r.result === 'pass' ? 'pass' : r.result === 'fail' ? 'fail' : 'warn';
+        check[status]++;
+        if (status === 'pass') continue;
+        check.details.push({
+          status,
+          fieldStatus: status === 'fail' ? 'FAILED' : 'UNABLE_TO_VERIFY',
+          label: r.field,
+          expected: r.expected === 'reject' ? 'an error message' : r.expected === 'accept' ? 'value accepted' : 'either',
+          actual: `${JSON.stringify(String(r.value ?? '').slice(0, 40))}: ${r.note}`
+        });
+      }
+      return check;
+    };
+
     /** Aggregates one scenario's verification and validation results into the full run. */
-    const recordChecks = (mode, offset) => {
-      const check = window.SFFAQAEngine.verifyFilledFields(detected);
+    const recordChecks = (mode, offset, result) => {
+      const check = mode === 'positive' || !Array.isArray(result?.cases)
+        ? window.SFFAQAEngine.verifyFilledFields(detected)
+        : judgeWrongValues(result.cases);
       const issues = window.SFFAQAEngine.detectValidationErrors();
       verification.pass += check.pass;
       verification.warn += check.warn;
@@ -191,6 +214,7 @@
             detected, testData, files, mappings, logger, {
               settings,
               isolatedMode: true,
+              rememberBeforeFill: el => rememberState({ text: [{ element: el }] }),
               credentials: settings.credentialsBySite?.[hostname] || {},
               repeatRows: settings.repeatRowsBySite?.[hostname] || [],
               multiSelectCount: settings.multiSelectCount || 2,
@@ -223,7 +247,7 @@
         }
 
         await RT.waitForDomSettle({ debounceMs: 150, maxWaitMs: 1000 });
-        const checks = recordChecks(mode, offset);
+        const checks = recordChecks(mode, offset, result);
         steps.push({
           step: steps.length + 1,
           mode,
@@ -318,7 +342,8 @@
       stopReason,
       cancelled,
       modes: Array.from(new Set(steps.map(step => step.mode))),
-      restorationLimits: [...restorationLimits]
+      restorationLimits: [...restorationLimits],
+      dataSeed: testData.seed || null
     };
   }
 
@@ -398,7 +423,11 @@
           stepSummary = await window.SFFAFormFiller.fillEntireForm(detected, testData, files, mappings, (msg, level) => RT.log(msg, level), {
             rescan: () => window.SFFAFormDetector.detectFormFields(customSelectors, settings.extraFileKeywords),
             isCancelled: () => run.cancelled || performance.now() - t0 > MAX_TOTAL_MS,
-            hydrateFiles: records => window.SFFAStorage.hydrateFileContents(records)
+            hydrateFiles: records => window.SFFAStorage.hydrateFileContents(records),
+            settings,
+            credentials: settings.credentialsBySite?.[hostname] || {},
+            repeatRows: settings.repeatRowsBySite?.[hostname] || [],
+            multiSelectCount: settings.multiSelectCount || 2
           });
           combinedSummary.textFilled += stepSummary.textFilled;
           combinedSummary.dropdownsFilled += stepSummary.dropdownsFilled;

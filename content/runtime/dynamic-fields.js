@@ -1,10 +1,10 @@
-// SmartForm AutoFill page runtime — Dynamic-field watcher; marks the page script ready/alive. Loaded last.
+// QA Kits page runtime — Dynamic-field watcher; marks the page script ready/alive. Loaded last.
 // Generated from the former single-file content/content.js. Modules share state through
 // window.__SFFA_RT__ (RT) and each stays wrapped in its own function, so re-injection is safe.
 (function () {
   if (window.__SFFA_RT_SKIP__) return;
   const RT = window.__SFFA_RT__;
-  if (!RT) throw new Error('SmartForm AutoFill: content/runtime/core.js must load first.');
+  if (!RT) throw new Error('QA Kits: content/runtime/core.js must load first.');
 
   if (!window.__SFFA_FIELD_OBSERVER__) {
     let lastFieldCount = null;

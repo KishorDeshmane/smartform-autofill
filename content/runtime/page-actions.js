@@ -1,10 +1,10 @@
-// SmartForm AutoFill page runtime — Submit/Save/Next discovery and execution.
+// QA Kits page runtime — Submit/Save/Next discovery and execution.
 // Generated from the former single-file content/content.js. Modules share state through
 // window.__SFFA_RT__ (RT) and each stays wrapped in its own function, so re-injection is safe.
 (function () {
   if (window.__SFFA_RT_SKIP__) return;
   const RT = window.__SFFA_RT__;
-  if (!RT) throw new Error('SmartForm AutoFill: content/runtime/core.js must load first.');
+  if (!RT) throw new Error('QA Kits: content/runtime/core.js must load first.');
 
   const PAGE_ACTION_POSITIVE = [
     'submit', 'save', 'save & continue', 'save and continue',
@@ -15,8 +15,10 @@
   const PAGE_ACTION_RISKY = [
     'delete', 'remove', 'cancel', 'logout', 'log out', 'sign out', 'back',
     'previous', 'prev', 'close', 'discard', 'reset', 'clear', 'pay',
-    'purchase', 'place order', 'unsubscribe', 'deactivate', 'submit', 'confirm', 'checkout'
+    'purchase', 'place order', 'unsubscribe', 'deactivate', 'checkout', 'payment'
   ];
+  // "Submit" and "Confirm" are allowed: step 3 is "Submit, save or go next". Preview only is on by default
+  // and a run asks before clicking; buttons that also say pay/payment/checkout/delete… are still skipped.
 
   
 

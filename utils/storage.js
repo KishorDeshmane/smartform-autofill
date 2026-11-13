@@ -19,6 +19,9 @@
     reuseMappedFileAcrossFields: false,
     dryRunPageActions: true,
     actionDryRunOffConfirmed: false,
+    fillOrder: 'page', // 'page' = top to bottom like a person (default); 'type' = old order by field type
+    tickSameAsBoxes: false, // tick "Same as permanent address"-style boxes during a fill
+    keepExistingValues: false, // a fill leaves fields that already have a value unchanged
     pickedClickIntervalMs: null, // wait between clicks for a picked element with many matches; null = 1 s default
 
     redactPathsInReports: true,

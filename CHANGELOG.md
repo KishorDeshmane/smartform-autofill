@@ -2,7 +2,41 @@
 
 ## Unreleased
 
+### Changed
+- Renamed the extension to **QA Kits** (store name, toolbar title, popup, settings, help, exports). Saved files, mappings and settings are kept.
+- **More wrong values in Wrong data.** Every kind of field gets more realistic mistakes: e.g. email 4 → 10 (space inside, two dots, starts with a dot, no domain ending…), mobile 4 → 9 (wrong first digit, letter O for zero, country code…), Aadhaar, PAN, GST, IFSC, PIN code, number, date, password, URL and name too. Values a correct form may accept (country code, decimal, emoji…) are reported but never counted as failures.
+- **Full QA no longer downloads files by itself.** When the run ends, a "Download the Full QA report" card offers buttons for the HTML report, the JSON data and (when activity capture is on) the page screenshot; only the files you click are downloaded. The card comes back when you reopen the popup on the same page.
+
+### Added
+- **Setting "Keep values already in the form"** (Options → General, off by default). When on, Quick fill and Valid data leave every field that already has a value as it is (text, dropdowns, radio buttons, checkbox groups, uploads, saved passwords) and fill only the empty ones. Wrong data, Edge cases and Full QA are not affected: they change values to test them and put them back.
+
 ### Fixed
+- Upload boxes no mapping matches (e.g. DCRA "Upload Evidence") were skipped when every stored file was mapped to other categories. Such a file is now used as the last fallback (`chooseFileRecords`, source `anyStored`).
+- Pages with many upload boxes got a file in only some of them when the site locks (disables) its upload boxes while it sends a file to its server: the next boxes were skipped as "disabled". The fill now waits (up to 30 s) until the page unlocks them (`waitForUploadUnlock`). Also: a field the page re-drew is now scanned again and filled in place; before, a re-drawn upload box could hand its file to the first box of the same kind (`findFreshFileInputByType` skips boxes already used or holding a file).
+- **Step 3 never pressed Submit or Confirm buttons**, although it is called "Submit, save or go next". They are now offered and pressed (Preview only is still on by default). Buttons that also mention payment, pay, checkout, delete and similar are still skipped.
+- **Labels that did not match what the feature does.** Full QA texts now use Valid data / Wrong data / Edge cases; the Reports card no longer says the Full QA report downloads by itself; the fresh-data and automatic-mapping hints say exactly when they apply; the page-action skip text lists every kind of button that is skipped; the Options Save button text lists everything it saves.
+- **The data seed never appeared in the Full QA report** (it always said "none (random)").
+- **Pages with many upload boxes filled slowly.** When the page shows the chosen file's name under the box, the fill now moves on at once instead of waiting 1.2 seconds per upload (a 101-upload page: 230 s → 101 s).
+- **After choosing Full QA, clicking Quick fill did nothing.** Quick fill stayed selected underneath, so the click changed nothing and Full QA kept running. Choosing Full QA now clears the other choice, so any mode can be picked again.
+- **Colour pickers and sliders showed false failures in Wrong data / Edge cases / Full QA.** The browser never lets these boxes be empty; that is no longer reported as a form bug.
+- **Uploads were done last, not in page order.** Upload boxes are now filled where they are on the page, between the questions around them.
+- **Most upload boxes stayed empty when there were more boxes than stored files.** Each file was used only once; now unused files go first, and when they run out a fitting file is used again.
+- **Long questions that mention "mobile" got a phone number.** A multi-line answer box never gets a phone number, PIN code, ID number or date now.
+- **Full QA counted correct rejections as failures.** When a wrong value (for example a bad email) showed an error, Full QA reported it as failed. Wrong and edge values are now judged the same way as in Wrong data / Edge cases: an error shown is a pass.
+- **A calendar's month title ("November 2026") was reported as an error message.** Pop-up calendars are now ignored when looking for errors.
+- **Wrong data / Edge cases said "original values put back" even when some dropdowns kept a choice.** The result now names those dropdowns (for example State, City). A calendar left open at the end is closed.
+- **Full QA and Wrong data / Edge cases left calendar-only date boxes empty.** They are now filled with correct data and cleared again at the end.
+- **Full QA's step-by-step fill ignored saved logins, repeat rows and your settings.** It now uses them, like Quick fill.
+- **Checked on real practice forms (DemoQA, Selenium web form, Formy) and fixed what they showed:**
+  - An email box with the placeholder "name@example.com" got a name; it now gets an email.
+  - Date boxes that already show a date like "11 Nov 2026" are filled in that same format (they used to stay unchanged); a "date" box with no format hint gets a date whose day equals the month, so it reads the same as DD/MM and MM/DD.
+  - A date picker's own Month / Year boxes were filled as if they were form fields; they are now left alone.
+  - Type-to-search dropdowns (react-select and similar: State, City, Subjects) were left empty; the extension now opens them, types a few letters when needed, and picks an option.
+  - A first option such as "Open this select menu" counted as a real choice; a real option is now chosen.
+- **Masked PAN / Aadhaar boxes got the wrong value.** In page order, a second box shown as dots (type "password") received the first one's value, so Aadhaar got the PAN. Only real sign-up password boxes now share a password.
+- **Aadhaar boxes got a CIN, PAN or GST number.** A box labelled Aadhaar is an "identity number", which picked a random ID kind; it now always gets a 12-digit Aadhaar.
+- **Wrong data / Edge cases / Full QA left test passwords behind.** These runs promise to put the original values back, but sign-up password boxes kept the test password; they are no longer touched in those runs (closed sections are also left as they were).
+- **"Required fields only" filled optional sign-up password boxes.** They now follow the Required / Optional choice.
 - Fields are no longer filled with another field's data. A field whose label isn't recognised (for example "Employee code" or a "Role" dropdown) used to borrow the type of a nearby field and get an email address or a name. Table, side-by-side and wrapped-label layouts are now classified field by field.
 - Large forms are fast: a 300-field form now scans in about 2 seconds (was about 40) and fills in about 6 seconds instead of failing with "The page stopped responding".
 - Websites no longer slow down after you use the extension. The background field watcher only reacts when form fields are actually added or removed.
@@ -24,6 +58,15 @@
 - **Clear all data** (Setup → Danger zone) now works, and the optional auto-clear no longer breaks the extension when it triggers. Both had failed since 2.1.3.
 
 ### New
+- **More kinds of fields get filled.** Checked on a test page: before 5 of 10 tricky fields were filled, now all 10.
+  - Optional boxes that reveal fields ("I have a GST number"): ticked, and kept ticked only when new fields appear; boxes that show nothing (a newsletter box) stay unticked.
+  - Masked boxes that only accept typing (DD/MM/YYYY dates, phone masks): typed key by key when a normal value is wiped.
+  - Read-only date pickers: the calendar is opened and a date is clicked.
+  - Fields in tabs that are not open: each tab with fields is opened and filled, then the original tab is shown again.
+  - Plain "Select …" dropdowns built without accessibility attributes: opened and an option chosen.
+  - Fields with a sample in the placeholder ("e.g. EMP-1234") get a value in that format (EMP-4138) instead of a sentence.
+- **Forms are filled in page order, like a person (new default).** Fields are filled top to bottom. After an answer that can change the form (a dropdown, radio, checkbox group, switch or autocomplete), the extension waits for the page to settle and fills any field that just appeared or became available right there — for example a GST number box shown after "Yes", a field unlocked by a radio choice, or a CIN box shown after "Company". State → District → City are filled together as one step. Autocomplete boxes, custom date pickers, sliders, ratings, switches and rich-text editors are filled at their own place. Closed sections that hide fields are opened first. Sign-up forms get the same test password in "Password" and "Confirm password" (a login form's password box is never filled). Files, consent boxes, saved credentials and repeat rows come last. At the end, fields the page still reports as empty or invalid are tried once more and listed by name if they still fail. The fill stops if the page moves to another address.
+- **Two new settings in Options → General:** "Fill order" (Page order, recommended / By field type, old) and "Tick 'Same as …' boxes" (off by default, so both addresses are filled).
 - **Test cases written so a client can read them.** Every generated case now has a plain title ("Check that the "Email" box refuses a wrong email address"), elements named as people see them ("State" dropdown, "Register" button, "Gender" options), real numbered steps (open the page, fill the other fields, click the form's own submit button), real test data (example emails and phone numbers, 17/18/19 around a minimum of 18, the page's own "5 MB" limit, the dropdown's real options) and a plain expected result. Four checks about the extension itself are no longer generated.
 - **"Click Save / Submit after each wrong value" (Wrong data and Edge cases).** Many forms show errors only when Save is clicked. With this option on, the extension clicks the form's own Save / Submit / Next button after each value the form should refuse (never after values it should accept, and never Cancel, Reset, Delete or Pay buttons), stops a full page submission, and judges the result: ✓ error shown or Save stays disabled, ✗ "The form accepted this value" when it was sent without an error. If the page moves to another screen, the run stops and says why. Off by default; the choice is remembered.
 - **Wrong data and Edge cases can test one field at a time (now the default).** Every field first gets correct data; then each wrong or limit value is tried on one field while the others stay correct, so any error clearly belongs to that field. The field returns to its correct value after each case, and the original values are put back at the end. A "Field" list lets you test just one field (for example only PAN); "All fields together" keeps the previous behaviour. Files are never touched.

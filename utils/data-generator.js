@@ -505,6 +505,7 @@
       addressLine2: `Near ${pick(['City Mall', 'Central Park', 'Bus Stand', 'Railway Station'])}`,
       identityNumber,
       identityType,
+      aadhaarNumber: generateAadhaar(), // for boxes labelled Aadhaar (identityNumber alone picks a random ID kind)
       panNumber: generatePanNumber(),
       cinNumber: generateCIN(),
       llpinNumber: generateLLPIN(),

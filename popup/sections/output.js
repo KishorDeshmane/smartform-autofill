@@ -117,6 +117,11 @@ function downloadTextFile(filename, mimeType, content) {
   else URL.revokeObjectURL(url);
 }
 
+/** Saves an image kept as a data: URL (e.g. the Full QA page screenshot); the browser asks where. */
+function downloadDataUrl(filename, dataUrl) {
+  window.SFFAExt.downloads?.download({ url: dataUrl, filename, saveAs: true });
+}
+
 /** Requests test-case generation and renders the resulting export options. */
 async function onGenerateTestCasesClick() {
   const btn = document.getElementById('generateTestCasesBtn');

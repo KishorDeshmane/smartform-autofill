@@ -51,7 +51,7 @@
   }
   /** Builds JavaScript Playwright test source from the supplied generated cases. */
   function toPlaywright(cases) {
-    const lines = ["import { test, expect } from '@playwright/test';", '', '// Generated from SmartForm AutoFill test cases. Review locators and expected outcomes before execution.', ''];
+    const lines = ["import { test, expect } from '@playwright/test';", '', '// Generated from QA Kits test cases. Review locators and expected outcomes before execution.', ''];
     cases.forEach((tc, i) => {
       const title = String(tc.title || tc.id || `Generated test ${i + 1}`).replace(/\s+/g, ' ').trim();
       const locator = locatorFor(tc);
@@ -75,7 +75,7 @@
   function pyString(v) { return JSON.stringify(String(v == null ? '' : v)); }
   /** Builds Python Playwright test source from the supplied generated cases. */
   function toPlaywrightPython(cases) {
-    const lines = ['import re', 'from pathlib import Path', 'import pytest', 'from playwright.sync_api import Page, expect', '', '# Generated from SmartForm AutoFill test cases. Review locators and expected outcomes before execution.', ''];
+    const lines = ['import re', 'from pathlib import Path', 'import pytest', 'from playwright.sync_api import Page, expect', '', '# Generated from QA Kits test cases. Review locators and expected outcomes before execution.', ''];
     cases.forEach((tc, i) => {
       const title = String(tc.title || tc.id || `generated_test_${i + 1}`).replace(/[^A-Za-z0-9_]+/g, '_').toLowerCase().trim() || `generated_test_${i + 1}`;
       const locator = locatorFor(tc);

@@ -32,6 +32,11 @@ const PAGES = {
   '/actions': `<!doctype html><title>Actions</title><body><form onsubmit="return false"><label>Name <input name="fullname"></label>
     <button type="button" id="save" onclick="window.saves=(window.saves||0)+1">Save</button>
     <button type="button" id="delete" onclick="window.deletes=(window.deletes||0)+1">Delete account</button></form></body>`,
+  // A Submit button step 3 may press, next to buttons it must never press.
+  '/submit-actions': `<!doctype html><title>Apply</title><body><form onsubmit="window.submits=(window.submits||0)+1; return false"><label>Name <input name="fullname"></label>
+    <button type="submit" id="submit">Submit</button>
+    <button type="button" id="pay" onclick="window.pays=(window.pays||0)+1">Submit payment</button>
+    <button type="button" id="delete" onclick="window.deletes=(window.deletes||0)+1">Delete account</button></form></body>`,
   '/upload': `<!doctype html><title>Upload</title><body><form><label>Upload photo <input type="file" name="photo" accept="image/*"></label>
     <label>Full name <input name="fullname"></label></form></body>`,
   // 300 fields in one big container: used to take ~40s to scan and fail the fill.
@@ -129,6 +134,162 @@ const PAGES = {
         if (!bad) window.saved.push({ email: em.value, mobile: document.getElementById('mob').value });
       });
     </script></body>`,
+  // Page-order fill: fields that depend on earlier answers, async chains, autocomplete, collapsed section.
+  '/page-order': `<!doctype html><title>Register business</title><body><form id="f" onsubmit="return false">
+    <label>Full name <input id="fullname" name="fullname" required></label>
+    <fieldset><legend>Do you have a GST number?</legend>
+      <label><input type="radio" name="hasGst" value="yes"> Yes</label><label><input type="radio" name="hasGst" value="no"> No</label></fieldset>
+    <div id="gstBox" hidden><label>GST number <input id="gst" name="gstNumber"></label></div>
+    <label>Company PAN <input id="pan" name="panNumber" disabled></label>
+    <label>State <select id="state" name="state"><option value="">Select state</option><option>Maharashtra</option><option>Karnataka</option></select></label>
+    <label>District <select id="district" name="district"><option value="">Select district</option></select></label>
+    <label>City <select id="city" name="city"><option value="">Select city</option></select></label>
+    <label>Type of business <select id="biz" name="businessType"><option value="">Select type</option><option>Company</option><option>Firm</option></select></label>
+    <div id="cinBox"></div>
+    <label>Branch <input id="branch" role="combobox" aria-autocomplete="list" aria-controls="branchList" aria-expanded="false" autocomplete="off"></label>
+    <ul id="branchList" role="listbox" hidden><li role="option">Pune Central</li><li role="option">Mumbai West</li></ul>
+    <details><summary>More details</summary><label>Landmark <input id="landmark" name="landmark"></label></details>
+    <label>Password <input type="password" id="pw" name="password"></label>
+    <label>Confirm password <input type="password" id="pw2" name="confirmPassword"></label>
+    <label>Permanent address <textarea id="perm" name="permanentAddress"></textarea></label>
+    <label><input type="checkbox" id="same"> Same as permanent address</label>
+    <div id="corrBox"><label>Correspondence address <textarea id="corr" name="correspondenceAddress"></textarea></label></div>
+    <label><input type="checkbox" id="agree" required> I agree to the terms</label>
+  </form><script>
+    window.order = [];
+    document.addEventListener('focusin', e => { const id = e.target.id; if (id && !window.order.includes(id)) window.order.push(id); });
+    document.querySelectorAll('input[name=hasGst]').forEach(r => r.addEventListener('change', () => {
+      document.getElementById('gstBox').hidden = r.value !== 'yes' || !r.checked;
+      document.getElementById('pan').disabled = false;
+    }));
+    const opts = (sel, list) => { sel.innerHTML = sel.options[0].outerHTML + list.map(x => '<option>' + x + '</option>').join(''); };
+    document.getElementById('state').addEventListener('change', e => setTimeout(() => opts(document.getElementById('district'), e.target.value ? ['Pune', 'Nashik'] : []), 400));
+    document.getElementById('district').addEventListener('change', e => setTimeout(() => opts(document.getElementById('city'), e.target.value ? ['Kothrud', 'Baner'] : []), 400));
+    document.getElementById('biz').addEventListener('change', e => {
+      document.getElementById('cinBox').innerHTML = e.target.value === 'Company' ? '<label>CIN number <input id="cin" name="cinNumber"></label>' : '';
+    });
+    const branch = document.getElementById('branch'), list = document.getElementById('branchList');
+    branch.addEventListener('click', () => { list.hidden = false; branch.setAttribute('aria-expanded', 'true'); });
+    list.addEventListener('click', e => { const o = e.target.closest('[role=option]'); if (o) { branch.value = o.textContent; list.hidden = true; branch.setAttribute('aria-expanded', 'false'); } });
+    document.getElementById('same').addEventListener('change', e => { document.getElementById('corrBox').hidden = e.target.checked; });
+  </script></body>`,
+  // Masked data boxes (type=password) that are not passwords, and a sign-up form.
+  '/kyc-masked': `<!doctype html><title>KYC</title><body><form>
+    <label>Full name <input id="name" name="fullname"></label>
+    <label>PAN number <input type="password" id="pan" name="panNumber"></label>
+    <label>Aadhaar number <input type="password" id="aadhaar" name="identityNumber"></label></form></body>`,
+  '/sign-up': `<!doctype html><title>Sign up</title><body><form>
+    <label>Email <input id="email" type="email" name="email" required></label>
+    <label>Password <input type="password" id="pw" name="password"></label>
+    <label>Confirm password <input type="password" id="pw2" name="confirmPassword"></label></form></body>`,
+  // Field kinds fills often miss: revealed by an optional box, masked date, calendar-only date, closed tab,
+  // placeholder format, plain div dropdown.
+  '/tricky': `<!doctype html><title>Tricky form</title><body><form id="f" onsubmit="return false">
+  <label>Full name <input id="name" name="fullname" required></label>
+  <label><input type="checkbox" id="news"> Send me the newsletter</label>
+
+  <label><input type="checkbox" id="hasGst"> I have a GST number</label>
+  <div id="gstWrap" hidden><label>GST number <input id="gst" name="gstNumber"></label></div>
+
+  <label>Date of birth (DD/MM/YYYY) <input id="dobMask" name="dob" placeholder="DD/MM/YYYY" inputmode="numeric"></label>
+
+  <label>Joining date <input id="dp" name="joiningDate" readonly placeholder="Select date" class="datepicker"></label>
+  <div id="cal" hidden><button type="button" data-date="12/03/2026">12</button><button type="button" data-date="13/03/2026">13</button></div>
+
+  <div role="tablist"><button type="button" role="tab" id="tab1" aria-selected="true" aria-controls="p1">Personal</button><button type="button" role="tab" id="tab2" aria-selected="false" aria-controls="p2">Bank</button></div>
+  <div role="tabpanel" id="p1"><label>Nickname <input id="nick" name="nickname"></label></div>
+  <div role="tabpanel" id="p2" hidden><label>Bank account number <input id="acct" name="bankAccountNumber"></label></div>
+
+  <label>Employee code <input id="emp" name="employeeCode" placeholder="e.g. EMP-1234"></label>
+
+  <label>Country code <select id="cc" name="countryCode"><option value="">Code</option><option value="+91">+91</option><option value="+1">+1</option></select></label>
+  <label>Mobile <input id="mob" type="tel" name="mobile"></label>
+
+  <div class="dd"><span>Department</span><button type="button" id="deptBtn" class="dd-toggle">Select department</button>
+    <ul id="deptList" class="dd-menu" hidden><li class="dd-item">Sales</li><li class="dd-item">Finance</li></ul>
+    <input type="hidden" id="dept" name="department"></div>
+</form><script>
+  document.getElementById('hasGst').addEventListener('change', e => { document.getElementById('gstWrap').hidden = !e.target.checked; });
+  // Mask that only accepts real key presses (like many mask libraries): programmatic values are wiped.
+  const m = document.getElementById('dobMask'); let digits = '';
+  const fmt = d => [d.slice(0, 2), d.slice(2, 4), d.slice(4, 8)].filter(Boolean).join('/');
+  m.addEventListener('keydown', e => { if (/^\\d$/.test(e.key) && digits.length < 8) digits += e.key; else if (e.key === 'Backspace') digits = digits.slice(0, -1); else return; e.preventDefault(); m.value = fmt(digits); m.dispatchEvent(new Event('change', { bubbles: true })); });
+  m.addEventListener('input', () => { m.value = fmt(digits); });
+  // Read-only date picker: only a calendar click sets the date.
+  const dp = document.getElementById('dp'), cal = document.getElementById('cal');
+  dp.addEventListener('click', () => { cal.hidden = false; });
+  cal.addEventListener('click', e => { const b = e.target.closest('[data-date]'); if (b) { dp.value = b.dataset.date; cal.hidden = true; dp.dispatchEvent(new Event('change', { bubbles: true })); } });
+  // Tabs.
+  for (const t of document.querySelectorAll('[role=tab]')) t.addEventListener('click', () => {
+    for (const o of document.querySelectorAll('[role=tab]')) { o.setAttribute('aria-selected', String(o === t)); document.getElementById(o.getAttribute('aria-controls')).hidden = o !== t; }
+  });
+  // Plain div dropdown without ARIA.
+  const btn = document.getElementById('deptBtn'), list = document.getElementById('deptList');
+  btn.addEventListener('click', () => { list.hidden = !list.hidden; });
+  list.addEventListener('click', e => { const li = e.target.closest('.dd-item'); if (li) { btn.textContent = li.textContent; document.getElementById('dept').value = li.textContent; list.hidden = true; } });
+</script></body>`,
+  // Patterns seen on real practice forms (DemoQA, Selenium web form).
+  '/real-patterns': `<!doctype html><title>Practice</title><body><form onsubmit="return false">
+    <label for="userEmail">Email</label><input id="userEmail" type="text" placeholder="name@example.com">
+    <label for="dateOfBirthInput">Date of Birth</label><input id="dateOfBirthInput" type="text" value="11 Nov 2026">
+    <div class="react-datepicker__month-container"><select id="calMonth"><option>January</option><option>February</option></select></div>
+    <label>Dropdown (select) <select id="pick"><option selected>Open this select menu</option><option value="1">One</option><option value="2">Two</option></select></label>
+    <label for="dp">Date picker</label><input id="dp" type="text" class="datepicker">
+    <label for="subj">Subjects</label>
+    <div class="subj-container"><div class="subj__control"><div class="subj__value" id="subjValue"></div>
+      <input id="subj" role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off"></div>
+      <div class="subj__menu" id="subjMenu" hidden></div></div>
+  </form><script>
+    const all = ['Maths', 'Physics', 'Chemistry', 'Accounting'];
+    const subj = document.getElementById('subj'), menu = document.getElementById('subjMenu');
+    subj.addEventListener('input', () => {
+      const q = subj.value.toLowerCase();
+      const hits = q ? all.filter(x => x.toLowerCase().includes(q)) : [];
+      menu.innerHTML = hits.map((x, i) => '<div class="subj__option" role="option" id="subj-option-' + i + '">' + x + '</div>').join('');
+      menu.hidden = !hits.length;
+    });
+    menu.addEventListener('click', e => { const o = e.target.closest('[role=option]'); if (o) { document.getElementById('subjValue').textContent += (document.getElementById('subjValue').textContent ? ', ' : '') + o.textContent; subj.value = ''; menu.hidden = true; } });
+  </script></body>`,
+  // Full QA: a PAN box that shows an error for wrong values, and a calendar-only date box whose pop-up
+  // announces the month in an alert region.
+  '/qa-calendar': `<!doctype html><title>Apply</title><body><form novalidate>
+    <div><label for="pan">PAN number</label><input id="pan" name="panNumber" aria-describedby="panErr"><p id="panErr" class="error" hidden></p></div>
+    <div><label for="dob">Date of birth</label><input id="dob" name="dob" readonly placeholder="Select date"></div>
+    <div id="cal" class="datepicker-popup" hidden><div role="alert">November 2026</div></div>
+  </form><script>
+    const pan = document.getElementById('pan'), err = document.getElementById('panErr');
+    const check = () => { const bad = pan.value !== '' && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan.value); err.hidden = !bad; err.textContent = bad ? 'Enter a valid PAN' : ''; pan.setAttribute('aria-invalid', String(bad)); };
+    pan.addEventListener('input', check); pan.addEventListener('blur', check);
+    const dob = document.getElementById('dob'), cal = document.getElementById('cal');
+    dob.addEventListener('click', () => {
+      cal.hidden = false;
+      if (!cal.querySelector('button')) for (let d = 1; d <= 28; d++) { const b = document.createElement('button'); b.type = 'button'; b.textContent = d; b.onclick = () => { dob.value = String(d).padStart(2, '0') + '/11/1990'; cal.hidden = true; }; cal.appendChild(b); }
+    });
+  </script></body>`,
+  // Like the DCR "Design Plan" page: per section a question, a hidden upload behind a "Choose file" button,
+  // and another question; more upload boxes than stored files. Records the order fields are filled in.
+  '/sections-upload': `<!doctype html><title>Design plan</title><body><style>.hidden{display:none}</style><form onsubmit="return false">
+    ${[1, 2, 3].map(n => `<section>
+      <label for="plan${n}">Proposed plan ${n}</label><textarea id="plan${n}" rows="2"></textarea>
+      <label>Power layout diagram ${n}<input id="up${n}" type="file" class="hidden" accept=".pdf,.png"><button type="button" class="pick">Choose file (PDF, PNG — max 5 MB)</button></label>
+      <label for="q${n}">For how many service providers is mobile coverage planned in public areas?</label><textarea id="q${n}" rows="2"></textarea>
+    </section>`).join('')}
+  </form><script>
+    window.order = [];
+    document.addEventListener('change', e => window.order.push(e.target.id), true);
+    document.addEventListener('input', e => { if (e.target.tagName === 'TEXTAREA') window.order.push(e.target.id); }, true);
+    document.querySelectorAll('.pick').forEach(b => b.addEventListener('click', () => b.previousElementSibling.click()));
+  </script></body>`,
+  // Some fields already have values (typed by the tester or set by the page), others are empty.
+  '/prefilled': `<!doctype html><title>Profile</title><body><form onsubmit="return false">
+    <label for="name">Full name</label><input id="name" name="fullname" value="Asha Verma">
+    <label for="email">Email</label><input id="email" type="email" name="email">
+    <label for="city">City</label><select id="city" name="city"><option value="">Select city</option><option>Pune</option><option selected>Delhi</option><option>Mumbai</option></select>
+    <label for="state">State</label><select id="state" name="state"><option value="">Select state</option><option>Goa</option><option>Kerala</option></select>
+    <label for="about">About you</label><textarea id="about" name="about">Written by the tester</textarea>
+    <label for="notes">Notes</label><textarea id="notes" name="notes"></textarea>
+    <fieldset><legend>Gender</legend><label><input type="radio" name="gender" value="f" checked> Female</label><label><input type="radio" name="gender" value="m"> Male</label></fieldset>
+  </form></body>`,
   '/big-form': `<!doctype html><title>Big form</title><body><form><div class="inner">${Array.from({ length: 300 }, (_, i) => `<div class="row"><label>Field number ${i} <input name="f${i}"></label><span class="help">Help text ${i}</span></div>`).join('')}${Array.from({ length: 1500 }, (_, i) => `<p>Paragraph ${i} with <b>some</b> <i>inline</i> text</p>`).join('')}</div></form></body>`,
   '/freeze-on-fill': `<!doctype html><title>Freeze on fill</title><body>${FORM}<script>let frozen = false; document.addEventListener('input', () => { if (frozen) return; frozen = true; setTimeout(() => { const end = Date.now() + 50000; while (Date.now() < end) {} }, 0); }, true);</script></body>`
 };
@@ -607,14 +768,50 @@ test('page actions: finds Save, never clicks Delete, and dry run does not click 
   } finally { await env.close(); }
 });
 
-test('Full QA run downloads a JSON and an HTML report describing the run', async () => {
+test('page actions: a Submit button is found and pressed; Submit payment and Delete are never pressed', async () => {
   const env = await launch();
   try {
-    const { popup } = await env.open('/modal');
-    const downloads = await captureDownloads(popup);
+    const { site, popup } = await env.open('/submit-actions');
+    await popup.evaluate(() => { document.getElementById('actionDetails').open = true; });
+    await popup.click('#scanActionButtonsBtn');
+    await popup.waitForSelector('#actionButtonPreview:not(.hidden)', { timeout: 20000 });
+    const preview = (await popup.textContent('#actionButtonPreview')).toLowerCase();
+    assert.ok(preview.includes('1 safe page action'), preview);
+    popup.on('dialog', d => d.accept());
+    await popup.evaluate(() => { window.confirm = () => true; });
+    await popup.uncheck('#actionDryRunToggle', { force: true });
+    await popup.click('#confirmOk'); // "Turn off dry run?"
+    await popup.waitForFunction(async () => (await SFFAStorage.getSettings()).dryRunPageActions === false, null, { timeout: 5000 });
+    await popup.click('#pageActionBtn');
+    await popup.waitForSelector('#pageActionResult:not(.hidden)', { timeout: 30000 });
+    await popup.waitForTimeout(500);
+    const counts = await site.evaluate(() => ({ submits: window.submits || 0, pays: window.pays || 0, deletes: window.deletes || 0 }));
+    assert.deepEqual(counts, { submits: 1, pays: 0, deletes: 0 }, JSON.stringify(counts));
+  } finally { await env.close(); }
+});
+
+test('Full QA run downloads nothing by itself; buttons offer the HTML report and JSON data, also after reopening', async () => {
+  const env = await launch();
+  try {
+    let { popup } = await env.open('/modal');
+    let downloads = await captureDownloads(popup);
     await popup.click('#fullQaModeButton');
     await popup.click('#fillFormBtn');
     await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 120000 });
+    await popup.waitForSelector('#fullQaDownloads:not(.hidden) #fullQaHtmlBtn', { timeout: 10000 });
+    await popup.waitForTimeout(500);
+    assert.deepEqual(await downloads(), [], 'nothing is downloaded until a button is clicked');
+    await popup.click('#fullQaHtmlBtn');
+    await popup.waitForFunction(() => window.__downloads.length === 1, null, { timeout: 10000 });
+    assert.match((await downloads())[0].filename, /\.html$/, 'only the chosen file is downloaded');
+    // The buttons come back when the popup is opened again on the same page.
+    await popup.close();
+    popup = await env.context.newPage();
+    await popup.goto(`chrome-extension://${env.extensionId}/popup/popup.html`);
+    await popup.waitForSelector('#fullQaDownloads:not(.hidden) #fullQaJsonBtn', { timeout: 10000 });
+    downloads = await captureDownloads(popup);
+    await popup.click('#fullQaJsonBtn');
+    await popup.click('#fullQaHtmlBtn');
     await popup.waitForFunction(() => window.__downloads.length >= 2, null, { timeout: 10000 });
     const files = await downloads();
     const json = files.find(f => f.filename.endsWith('.json'));
@@ -625,6 +822,101 @@ test('Full QA run downloads a JSON and an HTML report describing the run', async
     assert.ok(report.fieldsDetected >= 7, `fieldsDetected ${report.fieldsDetected}`);
     assert.equal(report.submit.clicked, false, 'Full QA must not submit unless explicitly enabled');
     assert.ok(html.text.includes('QA Report'));
+  } finally { await env.close(); }
+});
+
+test('Full QA: wrong values the page rejects count as passes, a calendar date is filled and put back', async () => {
+  const env = await launch();
+  try {
+    const { site, popup } = await env.open('/qa-calendar');
+    const downloads = await captureDownloads(popup);
+    await site.evaluate(() => { window.__dobValues = new Set(); setInterval(() => window.__dobValues.add(document.getElementById('dob').value), 50); });
+    await popup.click('#fullQaModeButton');
+    await popup.click('#fillFormBtn');
+    await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 120000 });
+    await popup.click('#fullQaJsonBtn');
+    await popup.waitForFunction(() => window.__downloads.length >= 1, null, { timeout: 10000 });
+    const report = JSON.parse((await downloads()).find(f => f.filename.endsWith('.json')).text);
+    const details = report.verificationDetail || [];
+    const panFails = details.filter(d => /PAN/.test(d.label) && d.fieldStatus === 'FAILED');
+    assert.equal(panFails.length, 0, `wrong PAN values that show an error are not failures: ${JSON.stringify(panFails.slice(0, 3))}`);
+    assert.ok(!report.validationErrorDetails.some(e => /November/.test(e.message)), 'a calendar month is not an error');
+    const seen = await site.evaluate(() => [...window.__dobValues]);
+    assert.ok(seen.some(v => /^\d{2}\/11\/1990$/.test(v)), `calendar date picked during the valid pass: ${seen}`);
+    assert.equal(await site.inputValue('#dob'), '', 'calendar date put back');
+  } finally { await env.close(); }
+});
+
+test('uploads are filled in page order, every upload box gets a file, and a long question never gets a phone number', async () => {
+  const env = await launch();
+  try {
+    const { site, popup } = await env.open('/sections-upload');
+    await popup.evaluate(() => { document.getElementById('filesDetails').open = true; });
+    await popup.setInputFiles('#fileInput', { name: 'layout.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 test') });
+    await popup.waitForSelector('#fileList .file-item', { timeout: 10000 });
+    await popup.click('#fillFormBtn');
+    await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 90000 });
+    const r = await site.evaluate(() => ({
+      files: [1, 2, 3].map(n => document.getElementById('up' + n).files.length),
+      questions: [1, 2, 3].map(n => document.getElementById('q' + n).value),
+      order: [...new Set(window.order)]
+    }));
+    assert.deepEqual(r.files, [1, 1, 1], 'one stored file is used again for every upload box');
+    for (const q of r.questions) assert.ok(q && !/^\+?\d[\d\s-]{7,}$/.test(q), `a question box gets an answer, not a phone number: ${q}`);
+    assert.deepEqual(r.order, ['plan1', 'up1', 'q1', 'plan2', 'up2', 'q2', 'plan3', 'up3', 'q3'], `filled top to bottom: ${r.order}`);
+  } finally { await env.close(); }
+});
+
+test('setting "Keep values already in the form": off by default (values replaced); on, only empty fields are filled', async () => {
+  const env = await launch();
+  try {
+    const read = site => site.evaluate(() => ({
+      name: document.getElementById('name').value, email: document.getElementById('email').value,
+      city: document.getElementById('city').value, state: document.getElementById('state').value,
+      about: document.getElementById('about').value, notes: document.getElementById('notes').value,
+      gender: document.querySelector('input[name=gender]:checked')?.value
+    }));
+    let { site, popup } = await env.open('/prefilled');
+    assert.equal(await popup.evaluate(async () => (await SFFAStorage.getSettings()).keepExistingValues), false, 'off by default');
+    await popup.click('#fillFormBtn');
+    await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 60000 });
+    let v = await read(site);
+    assert.notEqual(v.name, 'Asha Verma', 'off: a typed value is replaced');
+    assert.notEqual(v.about, 'Written by the tester', 'off: a typed answer is replaced');
+    await popup.close();
+
+    ({ site, popup } = await env.open('/prefilled'));
+    await popup.evaluate(() => SFFAStorage.updateSettings({ keepExistingValues: true }));
+    await popup.click('#fillFormBtn');
+    await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 60000 });
+    v = await read(site);
+    assert.equal(v.name, 'Asha Verma', 'on: typed name kept');
+    assert.equal(v.city, 'Delhi', 'on: chosen city kept');
+    assert.equal(v.about, 'Written by the tester', 'on: typed answer kept');
+    assert.equal(v.gender, 'f', 'on: chosen radio kept');
+    assert.match(v.email, /@/, 'on: empty email filled');
+    assert.ok(['Goa', 'Kerala'].includes(v.state), `on: empty dropdown filled: ${v.state}`);
+    assert.ok(v.notes, 'on: empty textarea filled');
+  } finally { await env.close(); }
+});
+
+test('mode cards: after choosing Full QA, clicking Quick fill switches back (also when Full QA was restored)', async () => {
+  const env = await launch();
+  try {
+    let { popup } = await env.open('/modal');
+    const mode = () => popup.evaluate(() => ({ mode: window.getSelectedQaMode(), selected: [...document.querySelectorAll('.mode-option.is-selected input')].map(i => i.value) }));
+    await popup.click('#fullQaModeButton');
+    assert.deepEqual(await mode(), { mode: 'fullqa', selected: [] }, 'no mode card looks selected while Full QA is on');
+    await popup.locator('input[name="qaMode"][value="normal"]').evaluate(r => r.closest('label').click());
+    assert.deepEqual(await mode(), { mode: 'normal', selected: ['normal'] }, 'Quick fill is chosen again');
+    // Full QA remembered from last time: Quick fill must still be clickable.
+    await popup.evaluate(() => localStorage.setItem('sffaLastMode', 'fullqa'));
+    await popup.close();
+    popup = await env.context.newPage();
+    await popup.goto(`chrome-extension://${env.extensionId}/popup/popup.html`);
+    await popup.waitForFunction(() => window.getSelectedQaMode() === 'fullqa', null, { timeout: 10000 });
+    await popup.locator('input[name="qaMode"][value="normal"]').evaluate(r => r.closest('label').click());
+    assert.equal((await mode()).mode, 'normal');
   } finally { await env.close(); }
 });
 
@@ -777,10 +1069,10 @@ test('Wrong data: every value is tried on every field and judged; browser blocks
       cases: [...f.querySelectorAll('.scenario-case')].map(c => ({ result: c.className.replace(/.*is-/, ''), scenario: c.querySelector('strong').textContent, note: c.querySelector('.scenario-note').textContent }))
     })));
     const field = name => results.find(r => r.field.includes(name))?.cases || [];
-    // All values per field, not one: email has 4, PAN 5, PIN code 5.
-    assert.equal(field('Email').length, 4, JSON.stringify(field('Email')));
-    assert.equal(field('PAN').length, 5, JSON.stringify(field('PAN')));
-    assert.equal(field('PIN').length, 5);
+    // All values per field, not one: email has 10, PAN 7, PIN code 7.
+    assert.equal(field('Email').length, 10, JSON.stringify(field('Email')));
+    assert.equal(field('PAN').length, 7, JSON.stringify(field('PAN')));
+    assert.equal(field('PIN').length, 7);
     // Field-specific wrong values exist.
     assert.ok(field('PAN').some(c => c.scenario === 'wrong order'));
     assert.ok(field('PIN').some(c => c.scenario === '5 digits'));
@@ -831,7 +1123,7 @@ test('Wrong data, one field at a time: a chosen field is tested alone while the 
     await popup.waitForSelector('#fillResult .scenario-results', { timeout: 90000 });
     const fields = await popup.$$eval('#fillResult .scenario-field summary span:nth-child(2)', els => els.map(e => e.textContent));
     assert.deepEqual(fields.map(f => /PAN/.test(f)), [true], `only PAN tested: ${fields}`);
-    assert.equal(await popup.locator('#fillResult .scenario-case').count(), 5, 'all 5 PAN values');
+    assert.equal(await popup.locator('#fillResult .scenario-case').count(), 7, 'all 7 PAN values');
     const during = await site.evaluate(() => [...window.__emailDuring]);
     assert.ok(during.length && during.every(v => /@/.test(v)), `email held a correct value during PAN cases: ${during}`);
     assert.match(await popup.textContent('#fillResult'), /one field at a time/);
@@ -853,17 +1145,124 @@ test('Wrong data with "Click Save": on-save errors are seen, and a field the for
       return f ? [...f.querySelectorAll('.scenario-case')].map(c => ({ result: c.className.replace(/.*is-/, ''), note: c.querySelector('.scenario-note').textContent })) : [];
     }, name);
     const email = await cases('Email');
-    assert.equal(email.length, 4);
-    assert.ok(email.every(c => c.result === 'pass' && /after clicking "Save"/.test(c.note)), JSON.stringify(email));
+    assert.equal(email.length, 10);
+    // This page's simple email check lets 3 of the wrong emails through: those are reported as failures
+    // (the form saved them). "test@gmail" (no domain ending) is valid for browsers, so it is only reported;
+    // every other wrong email shows the page's error after Save.
+    assert.equal(email.filter(c => c.result === 'pass' && /after clicking "Save"/.test(c.note)).length, 6, JSON.stringify(email));
+    assert.equal(email.filter(c => c.result === 'info').length, 1, JSON.stringify(email));
+    assert.equal(email.filter(c => c.result === 'fail' && /accepted this value/.test(c.note)).length, 3, JSON.stringify(email));
     const mobile = await cases('Mobile');
     assert.ok(mobile.some(c => c.result === 'fail' && /accepted this value/.test(c.note)), JSON.stringify(mobile));
-    // Only wrong mobile numbers were ever saved: correct data is never submitted by this mode.
+    // Only rows holding a wrong value were ever saved: correct data is never submitted by this mode.
     const saved = await site.evaluate(() => window.saved);
-    assert.ok(saved.length > 0 && saved.every(r => !/^[6-9]\d{9}$/.test(r.mobile)), JSON.stringify(saved));
+    const acceptedWrongEmails = ['test..user@gmail.com', '.test@gmail.com', 'test@gm_ail.com'];
+    assert.ok(saved.length > 0 && saved.every(r => !/^[6-9]\d{9}$/.test(r.mobile) || acceptedWrongEmails.includes(r.email)), JSON.stringify(saved));
     // The choice is remembered.
     await popup.reload();
     await popup.check('input[name="qaMode"][value="negative"]', { force: true });
     assert.equal(await popup.isChecked('#qaClickSubmit'), true);
+  } finally { await env.close(); }
+});
+
+test('page-order fill: fields that appear or unlock after an answer are filled at their place, top to bottom', async () => {
+  const env = await launch();
+  try {
+    const { site, popup } = await env.open('/page-order');
+    await popup.click('#fillFormBtn');
+    await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 90000 });
+    const v = await site.evaluate(() => Object.fromEntries(['fullname', 'gst', 'pan', 'state', 'district', 'city', 'biz', 'cin', 'branch', 'landmark', 'pw', 'pw2', 'perm', 'corr']
+      .map(id => [id, document.getElementById(id)?.value || ''])));
+    const status = await popup.textContent('#fillStatus');
+    for (const id of ['fullname', 'gst', 'pan', 'state', 'district', 'city', 'biz', 'cin', 'landmark', 'pw', 'perm', 'corr']) assert.ok(v[id], `${id} filled (${status}) ${JSON.stringify(v)}`);
+    assert.ok(['Pune Central', 'Mumbai West'].includes(v.branch), `autocomplete picked an option: ${v.branch}`);
+    assert.equal(v.pw2, v.pw, 'Confirm password matches');
+    assert.equal(await site.isChecked('#same'), false, '"Same as" box left unticked by default');
+    assert.equal(await site.isChecked('#agree'), true, 'consent ticked at the end');
+    assert.equal(await site.evaluate(() => document.querySelector('details').open), true, 'collapsed section opened');
+    const typed = ['fullname', 'gst', 'pan', 'cin', 'landmark', 'pw', 'pw2', 'perm', 'corr'];
+    const order = (await site.evaluate(() => window.order)).filter(id => typed.includes(id));
+    assert.deepEqual(order, typed, `fill order ${order}`);
+  } finally { await env.close(); }
+});
+
+test('page-order fill: the "By field type" setting keeps the old order', async () => {
+  const env = await launch();
+  try {
+    const { site, popup } = await env.open('/page-order');
+    await popup.evaluate(() => SFFAStorage.updateSettings({ fillOrder: 'type' }));
+    await popup.click('#fillFormBtn');
+    await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 90000 });
+    const order = await site.evaluate(() => window.order);
+    // Old order: visible text boxes first; the GST box (shown only after the radio) comes later.
+    assert.ok(order.indexOf('perm') >= 0 && order.indexOf('gst') > order.indexOf('perm'), `old order ${order}`);
+  } finally { await env.close(); }
+});
+
+test('masked PAN and Aadhaar boxes (type=password) get their own correct values, not a password', async () => {
+  const env = await launch();
+  try {
+    const { site, popup } = await env.open('/kyc-masked');
+    await popup.click('#fillFormBtn');
+    await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 60000 });
+    const v = await site.evaluate(() => ({ pan: document.getElementById('pan').value, aadhaar: document.getElementById('aadhaar').value }));
+    assert.match(v.pan, /^[A-Z]{5}\d{4}[A-Z]$/, `PAN format: ${v.pan}`);
+    assert.match(v.aadhaar, /^\d{12}$/, `Aadhaar is 12 digits: ${v.aadhaar}`);
+    assert.notEqual(v.pan, v.aadhaar);
+  } finally { await env.close(); }
+});
+
+test('sign-up: a normal fill sets the same password twice; Wrong data leaves the password boxes as they were', async () => {
+  const env = await launch();
+  try {
+    const { site, popup } = await env.open('/sign-up');
+    await popup.check('input[name="qaMode"][value="negative"]', { force: true });
+    await popup.waitForFunction(() => !document.getElementById('qaOneByOne').hidden);
+    await popup.click('#fillFormBtn');
+    await popup.waitForSelector('#fillResult .scenario-results', { timeout: 90000 });
+    assert.deepEqual(await site.evaluate(() => [document.getElementById('pw').value, document.getElementById('pw2').value]), ['', ''], 'restored after Wrong data');
+    await popup.check('input[name="qaMode"][value="normal"]', { force: true });
+    await popup.click('#fillFormBtn');
+    await popup.waitForFunction(() => /fields filled/.test(document.getElementById('fillStatus')?.textContent || ''), null, { timeout: 60000 });
+    const [pw, pw2] = await site.evaluate(() => [document.getElementById('pw').value, document.getElementById('pw2').value]);
+    assert.ok(pw.length >= 8 && pw === pw2, `password and confirmation match: ${pw} / ${pw2}`);
+  } finally { await env.close(); }
+});
+
+test('tricky fields: revealed by an optional box, masked date, calendar date, closed tab, placeholder format, plain dropdown', async () => {
+  const env = await launch();
+  try {
+    const { site, popup } = await env.open('/tricky');
+    await popup.click('#fillFormBtn');
+    await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 90000 });
+    const v = await site.evaluate(() => Object.fromEntries(['name', 'gst', 'dobMask', 'dp', 'acct', 'emp', 'mob', 'dept'].map(id => [id, document.getElementById(id).value])));
+    for (const [id, value] of Object.entries(v)) assert.ok(value, `${id} filled: ${JSON.stringify(v)}`);
+    assert.match(v.dobMask, /^\d{2}\/\d{2}\/\d{4}$/, 'masked date typed in DD/MM/YYYY');
+    assert.match(v.emp, /^EMP-\d{4}$/, 'follows the placeholder sample');
+    assert.equal(await site.isChecked('#hasGst'), true, 'kept ticked because it shows a field');
+    assert.equal(await site.isChecked('#news'), false, 'an optional box that shows nothing stays unticked');
+    assert.equal(await site.getAttribute('#tab1', 'aria-selected'), 'true', 'back on the tab that was open');
+  } finally { await env.close(); }
+});
+
+test('real-site patterns: email placeholder, date in the box\'s own format, prompt option, type-to-search box', async () => {
+  const env = await launch();
+  try {
+    const { site, popup } = await env.open('/real-patterns');
+    await popup.click('#fillFormBtn');
+    await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 90000 });
+    const v = await site.evaluate(() => ({
+      email: document.getElementById('userEmail').value, dob: document.getElementById('dateOfBirthInput').value,
+      calMonth: document.getElementById('calMonth').value, pick: document.getElementById('pick').value,
+      dp: document.getElementById('dp').value, subj: document.getElementById('subjValue').textContent
+    }));
+    assert.match(v.email, /^[^@\s]+@[^@\s]+\.[a-z]+$/, `email box got an email: ${v.email}`);
+    assert.match(v.dob, /^\d{2} [A-Z][a-z]{2} \d{4}$/, `date kept the box's format: ${v.dob}`);
+    assert.notEqual(v.dob, '11 Nov 2026', 'date changed');
+    assert.equal(v.calMonth, 'January', 'calendar pop-up boxes are not touched');
+    assert.ok(['1', '2'].includes(v.pick), `a real option, not the prompt: ${v.pick}`);
+    assert.match(v.dp, /^(\d{2})\/\1\/\d{4}$/, `date box without a format hint gets day = month: ${v.dp}`);
+    assert.ok(v.subj.length > 0, 'type-to-search box got a choice');
   } finally { await env.close(); }
 });
 
@@ -982,6 +1381,8 @@ test('viewport presets: phone and desktop presets emulate the real device; rotat
     // Remembered after reopening the popup.
     await popup.reload();
     await popup.waitForFunction(() => !/Finding your tab/.test(document.getElementById('pageHostChip')?.textContent || ''));
+    // The device list is filled during startup; read it only once it is ready.
+    await popup.waitForFunction(() => document.getElementById('viewportPreset')?.dataset.ready === 'true', null, { timeout: 10000 });
     assert.equal(await popup.inputValue('#viewportPreset'), 'laptop-1366');
     assert.equal(await popup.inputValue('#viewportWidth'), '1366');
     await popup.click('#tabSetupButton');

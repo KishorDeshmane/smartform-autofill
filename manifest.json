@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "SmartForm AutoFill",
+  "name": "QA Kits",
   "version": "2.2.0",
-  "description": "Local QA form filler with dynamic dependent dropdown handling, reusable test data, file mappings, QA scenarios, and screenshot reports.",
+  "description": "QA toolkit for testers: fill forms with fake test data, test wrong and edge values, upload files, scan pages, create test cases.",
   "permissions": [
     "storage",
     "unlimitedStorage",
@@ -24,7 +24,7 @@
     "service_worker": "background/service-worker.js"
   },
   "action": {
-    "default_title": "SmartForm AutoFill",
+    "default_title": "QA Kits",
     "default_popup": "popup/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
@@ -49,7 +49,7 @@
       "suggested_key": {
         "default": "Ctrl+Shift+Y"
       },
-      "description": "Open SmartForm AutoFill"
+      "description": "Open QA Kits"
     }
   }
 }
