@@ -3,6 +3,10 @@ dist/
 *.zip
 debug.log
 chrome-screenshot-profile/
-screenshots/glass-verification/
-screenshots/verification/
-screenshots/responsive/
+screenshots/
+
+# Local working notes and old audit files (kept on this computer, not on GitHub)
+MEMORY.md
+AUDIT.md
+CHANGELOG-AUDIT-FIX.md
+scripts/capture-popup-pages.mjs
