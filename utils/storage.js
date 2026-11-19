@@ -21,7 +21,7 @@
     actionDryRunOffConfirmed: false,
     fillOrder: 'page', // 'page' = top to bottom like a person (default); 'type' = old order by field type
     tickSameAsBoxes: false, // tick "Same as permanent address"-style boxes during a fill
-    keepExistingValues: false, // a fill leaves fields that already have a value unchanged
+    keepExistingValues: true, // a fill leaves fields that already have a value unchanged (on by default)
     pickedClickIntervalMs: null, // wait between clicks for a picked element with many matches; null = 1 s default
 
     redactPathsInReports: true,
@@ -327,6 +327,13 @@
   /** Loads generation settings and normalizes configured name and PIN lists. */
   async function getSettings() {
     const stored = await get(KEYS.SETTINGS, {});
+    // One-time switch (2026-11): "Keep values already in the form" became the default. Settings saved
+    // before then hold the old default (off), so turn it on once; later choices are kept.
+    if (stored && typeof stored === 'object' && stored.keepExistingDefaultApplied !== true) {
+      stored.keepExistingValues = true;
+      stored.keepExistingDefaultApplied = true;
+      await set(KEYS.SETTINGS, stored);
+    }
     const settings = { ...DEFAULT_SETTINGS, ...stored };
     for (const key of ['firstNames', 'lastNames', 'testPinCodes']) {
       const values = Array.isArray(settings[key]) ? settings[key].filter(v => typeof v === 'string' && v.trim()).map(v => v.trim()) : [];

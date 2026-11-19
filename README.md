@@ -1,6 +1,6 @@
-# QA Kits 2.2.0
+# QA Kit 2.2.0
 
-QA Kits is a browser extension for trying synthetic data in web forms and running page-side QA checks. It runs scans and form interactions in the current tab after you invoke it. Results are heuristic and should be reviewed.
+QA Kit is a browser extension for trying synthetic data in web forms and running page-side QA checks. It runs scans and form interactions in the current tab after you invoke it. Results are heuristic and should be reviewed.
 
 For step-by-step use of every button and setting, see the user guide: [FEATURES.md](FEATURES.md).
 
@@ -8,7 +8,7 @@ For step-by-step use of every button and setting, see the user guide: [FEATURES.
 
 - The popup and Chromium side panel organize controls into **Test**, **Output**, and **Setup** sections. The fill action remains visible while each section scrolls.
 
-- Detects common native and custom form controls and fills supported text, number, date/time, select, radio, checkbox, contenteditable, and common ARIA combobox fields with synthetic data. Fields are filled top to bottom in page order, like a person would; fields that appear after an answer (e.g. "City" after "State") are filled in place. Closed accordions and tabs that hold fields are opened and filled. File inputs can receive previously added test files. An optional setting, **Keep values already in the form**, leaves fields that already have a value untouched.
+- Detects common native and custom form controls and fills supported text, number, date/time, select, radio, checkbox, contenteditable, and common ARIA combobox fields with synthetic data. Fields are filled top to bottom in page order, like a person would; fields that appear after an answer (e.g. "City" after "State") are filled in place. Closed accordions and tabs that hold fields are opened and filled. File inputs can receive previously added test files. Fields that already have a value are left as they are and only empty fields are filled (setting **Keep values already in the form**, on by default; turn it off in Options → General to replace every value). Wrong data, Edge cases and Full QA still change values to test them and put them back.
 - Provides **Quick fill**, **Valid data**, **Wrong data**, **Edge cases**, and **Full QA run** modes. Wrong data and Edge cases test either one field at a time (other fields keep correct values) or all fields together, judge each value (Passed / No error shown yet / Failed / Accepted — check manually), and put the original values back. An optional **Click Save / Submit after each wrong value** helps forms that only validate on Save. Full QA runs Valid data, Wrong data and Edge cases in turn and restores supported values. Submission is off by default; an optional, separately confirmed submit check can click one safe submit-like control after a final fill.
 - An optional **data seed** (Options → Data & seed) makes generated values reproducible; the seed is recorded in the Full QA report so a run can be replayed.
 - Supports locally stored test files and file-to-category mappings. Optional single-file auto-mapping previews compatible, unmapped categories and asks before saving; it keeps existing mappings and marks confirmed suggestions for review. A separate setting controls whether a mapped file may be reused across matching fields (off by default). Also supports custom field selectors by hostname, test credentials by site, and repeatable-row rules.
@@ -33,18 +33,20 @@ The Chromium manifest defines both a popup and a side panel. The toolbar action 
 
 ### Firefox
 
-1. Build the Firefox package: `npm install`, then `npm run build:firefox`. This creates `dist/firefox/` and `dist/qa-kits-firefox.zip` with the Firefox manifest already in place.
+1. Build the Firefox package: `npm install`, then `npm run build:firefox`. This creates `dist/firefox/` and `dist/qa-kit-firefox.zip` with the Firefox manifest already in place.
 2. Open `about:debugging#/runtime/this-firefox` and choose **Load Temporary Add-on…**.
 3. Select `dist/firefox/manifest.json` (or the zip).
 
-Firefox uses the popup. Screenshot/activity capture, network profiles, viewport tools and the side panel are Chrome/Edge only; they are disabled with a "Chrome / Edge only" badge.
+Do not use **Add-ons → ⚙ → Install Add-on From File**, and do not drag the zip into Firefox. Normal Firefox only installs add-ons that Mozilla has signed. With an unsigned package it shows "This add-on could not be installed because it appears to be corrupt", even though the file is fine. A temporary add-on is removed when Firefox closes. To keep it installed, sign it on addons.mozilla.org as an unlisted add-on, or use Firefox Developer Edition or Nightly with `xpinstall.signatures.required` set to `false` in `about:config`. The Chrome zip never works in Firefox.
+
+In Firefox, clicking the toolbar icon (or Ctrl+Shift+Y) opens the QA Kit popup (460 × 600). To keep QA Kit open beside the page, like the Chrome side panel, click **Open in side panel** in the popup, or use View → Sidebar → QA Kit. Screenshot/activity capture, network profiles and viewport tools are Chrome/Edge only; they are disabled with a "Chrome / Edge only" badge.
 
 ### Firefox extension ID
 
 Firefox builds use the manifest gecko ID. Override it at build time without changing source manifests:
 
 ```powershell
-$env:QAKITS_GECKO_ID = "qa-kits@your-domain.example"
+$env:QAKITS_GECKO_ID = "qa-kit@your-domain.example"
 npm run build:firefox
 ```
 
@@ -62,7 +64,7 @@ Full QA operates on the current page. It does not submit or advance forms by def
 
 ## In-popup help and shortcuts
 
-Press the **?** button in the header (or the `?` key) for a short guide. Inside the popup: **Alt+S** scans the page, **Alt+F** fills the form, **Alt+1/2/3** switch between Test, Output and Setup, and **Esc** closes dialogs. The popup remembers the last fill option you used.
+Press the **?** button in the header (or the `?` key) for a short guide. Inside the popup: **Alt+S** scans the page, **Alt+F** fills the form, **Alt+T** / **Alt+B** (or the ↑ / ↓ buttons next to Fill the form) scroll the web page to the top / bottom, **Alt+1/2/3** switch between Test, Output and Setup, and **Esc** closes dialogs. The popup remembers the last fill option you used.
 
 ## Keyboard shortcut
 
@@ -166,8 +168,8 @@ Requires Node.js 22 or later.
 npm install              # install dev dependencies (ESLint, jsdom, Playwright, axe-core)
 npm test                 # run the node:test + jsdom unit tests in tests/
 npm run lint             # ESLint over the whole project
-npm run build:chrome     # build dist/chrome and dist/qa-kits-chrome.zip
-npm run build:firefox    # build dist/firefox and dist/qa-kits-firefox.zip
+npm run build:chrome     # build dist/chrome and dist/qa-kit-chrome.zip
+npm run build:firefox    # build dist/firefox and dist/qa-kit-firefox.zip
 npm run verify:popup     # Playwright + axe accessibility check of the popup states
 npm run verify:glass     # layout/overflow/contrast matrix across widths and themes
 npm run verify:responsive # popup, side panel and Options at 9 widths: overflow, spilling, overlapping or squeezed text

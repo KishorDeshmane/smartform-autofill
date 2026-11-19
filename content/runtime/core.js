@@ -1,4 +1,4 @@
-// QA Kits page runtime — Shared run state, logging/progress, heartbeat and DOM-settle helpers.
+// QA Kit page runtime — Shared run state, logging/progress, heartbeat and DOM-settle helpers.
 // Generated from the former single-file content/content.js. Modules share state through
 // window.__SFFA_RT__ (RT) and each stays wrapped in its own function, so re-injection is safe.
 (function () {
@@ -18,12 +18,13 @@
   
 
   /** Sends the current field-fill progress to the extension runtime. */
-  function reportProgress(done, total) {
+  function reportProgress(done, total, unit = 'fields') {
     try {
       window.SFFAExt.api.sendRuntimeMessage({
         type: 'SFFA_PROGRESS',
         done,
-        total
+        total,
+        unit
       }).catch(() => {});
     } catch (e) { /* Best-effort fallback: failure is intentionally non-fatal. */ }
   }

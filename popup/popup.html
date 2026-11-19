@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>QA Kits</title>
+  <title>QA Kit</title>
   <link rel="stylesheet" href="../styles/tokens.css" />
   <link rel="stylesheet" href="popup.css" />
   <script src="icons.js"></script>
@@ -13,7 +13,7 @@
   <header class="header glass-strong">
     <div class="header-title">
       <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2.5 4.5 13.5h6.5l-1 8 8.5-11h-6.5l1-8Z" /></svg></span>
-      <div class="header-copy"><h1>QA Kits</h1><div class="header-context"><button id="pageHostChip" class="host-chip" type="button" data-icon="globe" title="Target tab. Click to choose another tab when none is detected.">Finding your tab…</button><span id="envBadge" class="env-badge" data-state="unset" data-icon="info" hidden></span><span class="status-dot-host"><span id="pageStatusDot" class="status-dot" role="img" title="Blocked" aria-label="Blocked"></span><span id="pageStatusLabel">Blocked</span></span></div></div>
+      <div class="header-copy"><h1>QA Kit</h1><div class="header-context"><button id="pageHostChip" class="host-chip" type="button" data-icon="globe" title="Target tab. Click to choose another tab when none is detected.">Finding your tab…</button><span id="envBadge" class="env-badge" data-state="unset" data-icon="info" hidden></span><span class="status-dot-host"><span id="pageStatusDot" class="status-dot" role="img" title="Blocked" aria-label="Blocked"></span><span id="pageStatusLabel">Blocked</span></span></div></div>
     </div>
     <div class="header-actions">
       <button id="themeToggle" class="icon-btn theme-toggle" type="button" aria-label="Theme: system. Switch to light theme" title="Theme: system"><span id="themeModeIcon" class="theme-icon" data-icon="monitor" aria-hidden="true"></span></button>
@@ -49,7 +49,7 @@
     <section id="welcomeCard" class="card welcome-card" aria-labelledby="welcomeTitle" hidden>
       <div class="welcome-head">
         <span class="card-icon welcome-icon" data-icon="sparkles" aria-hidden="true"></span>
-        <div><h2 id="welcomeTitle">Welcome to QA Kits</h2><p>Fill web forms with realistic <strong>fake</strong> test data in one click.</p></div>
+        <div><h2 id="welcomeTitle">Welcome to QA Kit</h2><p>Fill web forms with realistic <strong>fake</strong> test data in one click.</p></div>
       </div>
       <ol class="welcome-steps">
         <li><span class="welcome-num">1</span><span><strong>Open the form</strong> you want to test in this tab.</span></li>
@@ -174,7 +174,7 @@
       <div id="progressWrap" class="progress-wrap hidden">
         <div class="progress-meta"><span id="progressActivity">Preparing run</span><span id="progressPercent">0%</span></div>
         <div id="fillProgressbar" class="progress-bar-bg" role="progressbar" aria-label="Form fill progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progressBar" class="progress-bar-fill"></div></div>
-        <div id="progressLabel" class="progress-label">0 / 0 fields completed</div>
+        <div id="progressLabel" class="progress-label">Starting…</div>
         <div id="fillPhase" class="fill-phase hidden" aria-live="polite"><span>Full QA phase</span><strong id="fillPhaseLabel">Analyzing</strong></div>
       </div>
 
@@ -431,7 +431,7 @@
 
     <details class="card shortcut-guide collapsible-card">
       <summary class="card-header collapsible-summary"><span class="card-icon" data-icon="keyboard" aria-hidden="true"></span><h2>Shortcuts &amp; quick guide</h2></summary>
-      <p id="shortcutBinding"><span>Open QA Kits:</span> <kbd id="actionShortcutChip">Loading…</kbd></p>
+      <p id="shortcutBinding"><span>Open QA Kit:</span> <kbd id="actionShortcutChip">Loading…</kbd></p>
       <p>Change it in your browser's extension shortcut settings: <a id="shortcutSettingsLink" href="chrome://extensions/shortcuts">chrome://extensions/shortcuts</a>.</p>
       <p>Workflow: add optional files → scan/fill → review → run a safe page action → generate/export test cases and evidence.</p>
     </details>
@@ -457,6 +457,10 @@
   <footer class="sticky-fill-bar" aria-label="Primary action">
     <button id="fillFormBtn" class="btn btn-primary btn-xl" type="button" data-requires-ext aria-describedby="fillButtonReason" data-tooltip="Run the selected mode on the target page." data-icon="zap" title="Fill the form (Alt+F)" aria-keyshortcuts="Alt+F">Fill the form</button>
     <button id="cancelFillBtn" class="btn btn-stop" type="button" disabled hidden aria-label="Stop active form fill or QA run" title="Stop the active fill or QA run" data-icon="stop">Stop fill / QA run</button>
+    <div class="scroll-page-group" role="group" aria-label="Scroll the web page">
+      <button id="scrollTopBtn" class="btn btn-secondary scroll-page-btn" type="button" data-requires-ext data-scroll-to="top" data-icon="arrowUp" title="Scroll the page to the top (Alt+T)" aria-label="Scroll the web page to the top" aria-keyshortcuts="Alt+T"></button>
+      <button id="scrollBottomBtn" class="btn btn-secondary scroll-page-btn" type="button" data-requires-ext data-scroll-to="bottom" data-icon="arrowDown" title="Scroll the page to the bottom (Alt+B)" aria-label="Scroll the web page to the bottom" aria-keyshortcuts="Alt+B"></button>
+    </div>
     <div id="fillButtonReason" class="btn-hint fill-button-reason" role="status">Scan the page first</div>
   </footer>
   </div>
@@ -491,6 +495,7 @@
       <dl class="help-keys">
         <dt><kbd>Alt</kbd> + <kbd>S</kbd></dt><dd>Scan page</dd>
         <dt><kbd>Alt</kbd> + <kbd>F</kbd></dt><dd>Fill the form</dd>
+        <dt><kbd>Alt</kbd> + <kbd>T</kbd> / <kbd>B</kbd></dt><dd>Scroll the web page to the top / bottom</dd>
         <dt><kbd>Alt</kbd> + <kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd></dt><dd>Test / Output / Setup tab</dd>
         <dt><kbd>?</kbd></dt><dd>Open this help</dd>
         <dt><kbd>Esc</kbd></dt><dd>Close dialogs and menus</dd>

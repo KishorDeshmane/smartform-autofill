@@ -12,6 +12,32 @@ function toggleAllTypeSelections(fileId, checked, listEl = document.getElementBy
 }
 
 
+// Preview URLs of the list currently shown; freed when the list is drawn again.
+let fileThumbUrls = [];
+
+/**
+ * The picture at the start of a file row: a small preview for images, otherwise a badge with the
+ * file type (PDF, DOC, XLS, TXT, FILE). A preview that cannot be read falls back to the badge.
+ */
+function fileVisual(file) {
+  const label = iconForType(file);
+  const badge = window.SFFADom.h('span', { class: 'file-icon file-badge', 'data-kind': label.toLowerCase(), 'aria-hidden': 'true', text: label });
+  if (label !== 'IMG' || !SFFAStorage.getFileBlob) return badge;
+  const box = window.SFFADom.h('span', { class: 'file-icon file-thumb', 'aria-hidden': 'true' });
+  SFFAStorage.getFileBlob(file.id).then(blob => {
+    if (!blob || !box.isConnected) { box.replaceWith(badge); return; }
+    const url = URL.createObjectURL(blob);
+    fileThumbUrls.push(url);
+    const img = document.createElement('img');
+    img.alt = '';
+    img.decoding = 'async';
+    img.addEventListener('error', () => box.replaceWith(badge), { once: true });
+    img.src = url;
+    box.append(img);
+  }).catch(() => box.replaceWith(badge));
+  return box;
+}
+
 /** Returns compatible, currently unmapped categories for the confirmation preview. */
 async function getSoloFileAutoMappingProposals(files, settings, mappings) {
   if (files.length !== 1 || !settings?.automaticFileMapping) return [];
@@ -56,6 +82,8 @@ async function renderFileList() {
   }
   const listEl = document.getElementById('fileList');
   listEl.replaceChildren();
+  fileThumbUrls.forEach(url => URL.revokeObjectURL(url));
+  fileThumbUrls = [];
 
   const filesDetails = document.getElementById('filesDetails');
   if (filesDetails && files.length) filesDetails.open = true;
@@ -116,16 +144,16 @@ async function renderFileList() {
 
     const displayName = file.label || file.name;
     const li = h('li', { class: 'file-item' }, [
-      h('span', { class: 'file-icon', 'data-icon': iconNameForType(file), 'aria-hidden': 'true', text: iconForType(file) }),
+      fileVisual(file),
       h('div', { class: 'file-meta' }, [
         h('div', { class: 'file-name', title: displayName, text: displayName }),
-        h('div', { class: 'file-sub', text: `${file.type} · ${formatBytes(file.size)}` }),
+        h('div', { class: 'file-sub', title: file.type || '', text: `${(window.SFFAFileTypes?.getFileExtension(file.name) || '').replace('.', '').toUpperCase() || file.type || 'File'} · ${formatBytes(file.size)}` }),
         ...(autoMappings.some(mapping => mapping.fileId === file.id && (mappings[mapping.type] || []).includes(file.id))
           ? [h('span', { class: 'auto-mapped-badge', text: 'Auto-mapped · review before use' })] : [])
       ]),
       mappingDropdown,
       h('div', { class: 'file-actions' }, [
-        h('button', { type: 'button', 'data-action': 'rename', 'data-id': file.id, title: 'Rename', 'aria-label': `Rename ${displayName}`, class: 'icon-btn', 'data-icon': 'fileText' }),
+        h('button', { type: 'button', 'data-action': 'rename', 'data-id': file.id, title: 'Rename', 'aria-label': `Rename ${displayName}`, class: 'icon-btn', 'data-icon': 'pencil' }),
         h('button', { type: 'button', 'data-action': 'delete', 'data-id': file.id, title: 'Delete', 'aria-label': `Delete ${displayName}`, class: 'icon-btn', 'data-icon': 'trash' })
       ]),
     ]);

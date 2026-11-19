@@ -65,9 +65,9 @@ async function updateTargetTab() {
   }
   headerTabId = tab.id;
   try { await restoreSummaryForTab(tab); }
-  catch (error) { console.warn('[QA Kits] Could not restore the saved summary for this tab:', error); }
+  catch (error) { console.warn('[QA Kit] Could not restore the saved summary for this tab:', error); }
   try { await restoreFullQaDownloads(tab); }
-  catch (error) { console.warn('[QA Kits] Could not restore the last Full QA report:', error); }
+  catch (error) { console.warn('[QA Kit] Could not restore the last Full QA report:', error); }
   let hostname = '';
   try { hostname = new URL(tab.url).hostname; } catch (_) { /* Best-effort fallback: failure is intentionally non-fatal. */ }
   target.textContent = `Target: ${sanitizeReportText(tab.title || 'Untitled page')}${hostname ? ` (${hostname})` : ''}`;
@@ -140,7 +140,7 @@ async function requestSiteAccess() {
 function scheduleTargetTabRefresh() {
   summaryTabRefreshQueue = summaryTabRefreshQueue
     .then(() => updateTargetTab())
-    .catch(error => console.warn('[QA Kits] Could not refresh active-tab summary:', error));
+    .catch(error => console.warn('[QA Kit] Could not refresh active-tab summary:', error));
 }
 
 /** Removes unsafe or excessive text before report content is displayed. */
@@ -210,6 +210,8 @@ function initKeyboardShortcuts() {
       const key = event.key.toLowerCase();
       if (key === 's') { document.getElementById('tabTestButton')?.click(); click('scanPageBtn'); }
       else if (key === 'f') { document.getElementById('tabTestButton')?.click(); click('fillFormBtn'); }
+      else if (key === 't') click('scrollTopBtn');
+      else if (key === 'b') click('scrollBottomBtn');
       else if (key === '1') click('tabTestButton');
       else if (key === '2') click('tabOutputButton');
       else if (key === '3') click('tabSetupButton');
@@ -237,7 +239,7 @@ async function init() {
   restoreLastMode();
   initSectionTabs();
   // Resolve the target tab right away; it must not wait on storage or background replies below.
-  const firstTabRefresh = updateTargetTab().catch(error => console.warn('[QA Kits] Initial tab detection failed:', error));
+  const firstTabRefresh = updateTargetTab().catch(error => console.warn('[QA Kit] Initial tab detection failed:', error));
   initThemeAndLayout();
   initRedesignControls();
   if (window.SFFAFileTypes && window.SFFAFileTypes.UPLOAD_ACCEPT_ATTRIBUTE) {
@@ -258,12 +260,12 @@ async function init() {
 
   if (hasExt()) await withTimeout(sendRuntimeMessage({ type: 'SFFA_ENSURE_MIGRATION' }), 4000, null);
 
-  await renderFileList().catch(error => console.warn('[QA Kits] File list failed to render:', error));
+  await renderFileList().catch(error => console.warn('[QA Kit] File list failed to render:', error));
 
   const lastFilledDisplay = await SFFAStorage.getLastFilledDisplay().catch(() => null);
   renderGeneratedData(lastFilledDisplay);
 
-  await renderLogs().catch(error => console.warn('[QA Kits] Activity log failed to render:', error));
+  await renderLogs().catch(error => console.warn('[QA Kit] Activity log failed to render:', error));
 
   document.getElementById('addFileBtn').addEventListener('click', () => {
     document.getElementById('fileInput').click();
@@ -309,9 +311,15 @@ async function init() {
     } else showTargetTabPicker();
   });
   document.getElementById('openSidePanelBanner').addEventListener('click', async () => {
+    if (window.SFFAExt.sidePanel?.isSidebar) {
+      // Firefox sidebar: open first (user-action rule), then close this popup.
+      if (await window.SFFAExt.sidePanel.open()) window.close();
+      else setExtensionContextBanner(true, 'Could not open the sidebar. Use View → Sidebar → QA Kit instead.');
+      return;
+    }
     const tab = await window.SFFAExt.queryActiveTab();
     if (!tab?.windowId || !await window.SFFAExt.sidePanel?.open({ windowId: tab.windowId })) {
-      setExtensionContextBanner(true, 'Could not open the side panel. Open QA Kits from the toolbar instead.');
+      setExtensionContextBanner(true, 'Could not open the side panel. Open QA Kit from the toolbar instead.');
     }
   });
   if (/Firefox/i.test(navigator.userAgent)) {
@@ -320,7 +328,7 @@ async function init() {
   }
 
   await firstTabRefresh;
-  await updateTargetTab().catch(error => console.warn('[QA Kits] Tab detection failed:', error));
+  await updateTargetTab().catch(error => console.warn('[QA Kit] Tab detection failed:', error));
   restorePendingPick();
   if (hasExt()) {
     window.SFFAExt.tabs.onActivated?.addListener(() => scheduleTargetTabRefresh());
@@ -356,6 +364,23 @@ async function init() {
     }
   });
   document.getElementById('fillFormBtn').addEventListener('click', onFillFormClick);
+  // ↑ / ↓ next to Fill the form: scroll the web page (not the popup) to its top or bottom.
+  document.querySelectorAll('.scroll-page-btn').forEach(button => button.addEventListener('click', async () => {
+    if (button.getAttribute('aria-busy') === 'true') return;
+    const to = button.dataset.scrollTo;
+    button.setAttribute('aria-busy', 'true');
+    try {
+      const tab = await getActiveTab();
+      if (!tab?.id) throw new Error('Open a website tab first.');
+      const response = await sendTabMessage(tab.id, { type: 'SFFA_SCROLL_PAGE', to }, { timeoutMs: 8000 });
+      if (!response?.ok) throw new Error(response?.error || 'Could not scroll this page.');
+      if (!response.moved) showToast(`The page is already at the ${to}`);
+    } catch (error) {
+      showToast(error instanceof PageTimeoutError ? 'The page did not answer. Reload the tab and try again.' : error.message);
+    } finally {
+      button.removeAttribute('aria-busy');
+    }
+  }));
   document.querySelectorAll('input[name="qaMode"]').forEach(radio => {
     radio.addEventListener('change', () => {
       document.getElementById('fullQaModeButton')?.setAttribute('aria-pressed', 'false');
@@ -425,23 +450,23 @@ async function init() {
   document.getElementById('stopPageActionBtn').addEventListener('click', onStopPageActionClick);
   document.getElementById('generateTestCasesBtn').addEventListener('click', onGenerateTestCasesClick);
   document.getElementById('exportTcCsvBtn').addEventListener('click', () => {
-    downloadTextFile('qa-kits-testcases.csv', 'text/csv', testCasesToCsv(lastTestCases));
+    downloadTextFile('qa-kit-testcases.csv', 'text/csv', testCasesToCsv(lastTestCases));
   });
   document.getElementById('exportTcMdBtn').addEventListener('click', () => {
-    downloadTextFile('qa-kits-testcases.md', 'text/markdown', testCasesToMarkdown(lastTestCases));
+    downloadTextFile('qa-kit-testcases.md', 'text/markdown', testCasesToMarkdown(lastTestCases));
   });
   document.getElementById('exportTcHtmlBtn').addEventListener('click', () => {
-    downloadTextFile('qa-kits-testcases.html', 'text/html', window.SFFAQAReport.toHtml(lastTestCaseReport || { cases: lastTestCases }));
+    downloadTextFile('qa-kit-testcases.html', 'text/html', window.SFFAQAReport.toHtml(lastTestCaseReport || { cases: lastTestCases }));
   });
   document.getElementById('printTcBtn').addEventListener('click', printTestCases);
   document.getElementById('exportTcJsBtn').addEventListener('click', () => {
-    downloadTextFile('qa-kits-testcases.spec.js', 'text/javascript', testCasesToPlaywright(lastTestCases));
+    downloadTextFile('qa-kit-testcases.spec.js', 'text/javascript', testCasesToPlaywright(lastTestCases));
   });
   document.getElementById('exportTcTsBtn').addEventListener('click', () => {
-    downloadTextFile('qa-kits-testcases.spec.ts', 'text/typescript', testCasesToPlaywright(lastTestCases));
+    downloadTextFile('qa-kit-testcases.spec.ts', 'text/typescript', testCasesToPlaywright(lastTestCases));
   });
   document.getElementById('exportTcPyBtn').addEventListener('click', () => {
-    downloadTextFile('qa-kits-testcases.py', 'text/x-python', testCasesToPlaywrightPython(lastTestCases));
+    downloadTextFile('qa-kit-testcases.py', 'text/x-python', testCasesToPlaywrightPython(lastTestCases));
   });
   document.getElementById('captureReportBtn').addEventListener('click', onCaptureReportClick);
   document.getElementById('applyNetworkProfileBtn').addEventListener('click', () => onNetworkProfileClick(document.getElementById('networkProfile').value));

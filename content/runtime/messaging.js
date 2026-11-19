@@ -1,18 +1,41 @@
-// QA Kits page runtime — Runtime message router (message type names are unchanged).
+// QA Kit page runtime — Runtime message router (message type names are unchanged).
 // Generated from the former single-file content/content.js. Modules share state through
 // window.__SFFA_RT__ (RT) and each stays wrapped in its own function, so re-injection is safe.
 (function () {
   if (window.__SFFA_RT_SKIP__) return;
   const RT = window.__SFFA_RT__;
-  if (!RT) throw new Error('QA Kits: content/runtime/core.js must load first.');
+  if (!RT) throw new Error('QA Kit: content/runtime/core.js must load first.');
+
+  /**
+   * Scrolls the page to the top or the bottom: the window and every panel that holds page content
+   * (many web apps scroll a <main> or a form panel instead of the window). Small scroll boxes such
+   * as open dropdown lists are left alone. Smooth unless the user asked for reduced motion.
+   * Returns how many scroll areas moved (0 = already there).
+   */
+  function scrollPage(to) {
+    const down = to === 'bottom';
+    const behavior = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    const canMove = el => down ? el.scrollTop < el.scrollHeight - el.clientHeight - 1 : el.scrollTop > 0;
+    const scroller = document.scrollingElement || document.documentElement;
+    let moved = 0;
+    if (scroller && canMove(scroller)) { window.scrollTo({ top: down ? scroller.scrollHeight : 0, left: window.scrollX, behavior }); moved++; }
+    const minHeight = Math.min(200, window.innerHeight / 3);
+    for (const el of document.body ? document.body.getElementsByTagName('*') : []) {
+      if (el.clientHeight < minHeight || el.scrollHeight <= el.clientHeight + 1 || !canMove(el)) continue;
+      if (!/(auto|scroll|overlay)/.test(getComputedStyle(el).overflowY)) continue;
+      el.scrollTo({ top: down ? el.scrollHeight : 0, behavior });
+      moved++;
+    }
+    return { moved };
+  }
 
   window.SFFAExt.onMessage((message, sender, sendResponse) => {
     const response = sendResponse;
     sendResponse = (result) => {
-      if (message?._sffaDebug) console.debug('[QA Kits message result]', { type: message.type, result });
+      if (message?._sffaDebug) console.debug('[QA Kit message result]', { type: message.type, result });
       response(result);
     };
-    if (message?._sffaDebug) console.debug('[QA Kits message received]', { type: message.type });
+    if (message?._sffaDebug) console.debug('[QA Kit message received]', { type: message.type });
     if (!message || typeof message.type !== 'string') return false;
     if (message.type === 'SFFA_PING') {
       sendResponse({
@@ -32,6 +55,11 @@
       } else {
         sendResponse({ ok: true, cancelled: false, note: 'No run currently in progress' });
       }
+      return true;
+    }
+
+    if (message.type === 'SFFA_SCROLL_PAGE') {
+      sendResponse({ ok: true, ...scrollPage(message.to) });
       return true;
     }
 

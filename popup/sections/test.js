@@ -109,8 +109,13 @@ async function ensureContentScriptInjected(tabId) {
   }
 }
 
-/** Updates the fill progress indicator using completed and total field counts. */
-function setProgress(done, total) {
+let lastProgress = { total: 0, unit: 'fields' };
+
+/**
+ * Updates the progress indicator. `unit` names what is counted (fields, rounds).
+ * setProgress(0, 1) means "starting" (nothing counted yet).
+ */
+function setProgress(done, total, unit = 'fields') {
   const wrap = document.getElementById('progressWrap');
   const progressbar = document.getElementById('fillProgressbar');
   const bar = document.getElementById('progressBar');
@@ -121,7 +126,16 @@ function setProgress(done, total) {
   bar.style.width = `${pct}%`;
   progressbar.setAttribute('aria-valuenow', String(pct));
   percentLabel.textContent = `${pct}%`;
-  label.textContent = `${done} / ${total} fields completed`;
+  if (done === 0 && total === 1) { label.textContent = 'Starting…'; lastProgress = { total: 0, unit }; return; }
+  lastProgress = { total, unit };
+  label.textContent = `${done} / ${total} ${unit} completed`;
+}
+
+/** Shows the bar as complete, keeping the last real count ("33 / 33 fields completed"). */
+function finishProgress() {
+  if (lastProgress.total > 0) { setProgress(lastProgress.total, lastProgress.total, lastProgress.unit); return; }
+  setProgress(1, 1);
+  document.getElementById('progressLabel').textContent = 'Done';
 }
 
 const FILL_MODE_DESCRIPTIONS = {
@@ -411,7 +425,7 @@ function isFieldScopedMode(mode) {
 /** Appends field verification and validation messages to a fill result panel. */
 function appendVerificationPanel(container, verification, validationErrors) {
   if (!verification && !(validationErrors && validationErrors.length)) return;
-  try { applyFieldResults(container, verification); } catch (error) { console.warn('[QA Kits] Could not show per-field results:', error); }
+  try { applyFieldResults(container, verification); } catch (error) { console.warn('[QA Kit] Could not show per-field results:', error); }
   const { h } = window.SFFADom;
   if (verification) {
     container.appendChild(resultLine('Verified accepted', verification.pass, 'success', 'Verified'));
@@ -973,7 +987,7 @@ function buildSecurityScanReportText(scan) {
   try { when = new Date(scan.scannedAt).toLocaleString(); } catch (_) { /* keep ISO text */ }
   const line = '-'.repeat(60);
   const lines = [
-    'SECURITY SCAN REPORT — QA Kits',
+    'SECURITY SCAN REPORT — QA Kit',
     line,
     `Page:        ${scan.title ? `${scan.title} — ` : ''}${scan.url}`,
     `Scanned:     ${when}`,
@@ -1276,7 +1290,7 @@ async function runQaModeFill(mode) {
       options: { fieldScope, oneAtATime, targetKey, clickSubmit }
     }, { watchdogMs: 30000 });
     if (!response || !response.ok) throw new Error(response?.error || 'QA run failed');
-    setProgress(1, 1);
+    finishProgress();
 
     if (response.summary.total === 0) {
       await updateQaDashboard({ fields: 0, passed: 0, failed: 0, skipped: response.summary.skipped?.length || 0,
@@ -1443,7 +1457,7 @@ async function runFullQaRunFlow() {
       options: { modeSuite: true, submitEnabled }
     }, { watchdogMs: 30000 });
     if (!response || !response.ok) throw new Error(response?.error || 'Full QA Run failed');
-    setProgress(1, 1);
+    finishProgress();
 
     let capture = null;
     let captureCounts = null;
@@ -1631,7 +1645,7 @@ async function onFillFormClick() {
       throw new Error(response?.error || 'Fill operation failed');
     }
 
-    setProgress(1, 1);
+    finishProgress();
     if (response.summary.total === 0) {
       await updateQaDashboard({ fields: 0, passed: 0, failed: 0, skipped: response.summary.skipped?.length || 0,
         issues: response.validationErrors?.length || 0, durationMs: performance.now() - startedAt },

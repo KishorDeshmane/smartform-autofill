@@ -290,7 +290,14 @@ const PAGES = {
     <label for="notes">Notes</label><textarea id="notes" name="notes"></textarea>
     <fieldset><legend>Gender</legend><label><input type="radio" name="gender" value="f" checked> Female</label><label><input type="radio" name="gender" value="m"> Male</label></fieldset>
   </form></body>`,
-  '/big-form': `<!doctype html><title>Big form</title><body><form><div class="inner">${Array.from({ length: 300 }, (_, i) => `<div class="row"><label>Field number ${i} <input name="f${i}"></label><span class="help">Help text ${i}</span></div>`).join('')}${Array.from({ length: 1500 }, (_, i) => `<p>Paragraph ${i} with <b>some</b> <i>inline</i> text</p>`).join('')}</div></form></body>`,
+  // The window scrolls, and so does an inner panel (many web apps scroll a <main> instead); a small
+  // dropdown-style list must not be touched.
+  '/scroll': `<!doctype html><title>Long page</title><body style="margin:0">
+    <div style="height:1500px">Top of page</div>
+    <main id="panel" style="height:400px;overflow:auto">${Array.from({ length: 80 }, (_, i) => `<p><label>Field ${i} <input name="f${i}"></label></p>`).join('')}</main>
+    <ul id="list" style="height:80px;overflow:auto">${'<li>Option</li>'.repeat(30)}</ul>
+    <div style="height:1500px"></div></body>`,
+  '/big-form':`<!doctype html><title>Big form</title><body><form><div class="inner">${Array.from({ length: 300 }, (_, i) => `<div class="row"><label>Field number ${i} <input name="f${i}"></label><span class="help">Help text ${i}</span></div>`).join('')}${Array.from({ length: 1500 }, (_, i) => `<p>Paragraph ${i} with <b>some</b> <i>inline</i> text</p>`).join('')}</div></form></body>`,
   '/freeze-on-fill': `<!doctype html><title>Freeze on fill</title><body>${FORM}<script>let frozen = false; document.addEventListener('input', () => { if (frozen) return; frozen = true; setTimeout(() => { const end = Date.now() + 50000; while (Date.now() < end) {} }, 0); }, true);</script></body>`
 };
 
@@ -566,6 +573,51 @@ test('"Reduce visual effects" removes the blur and is remembered', async () => {
     await options.goto(`chrome-extension://${env.extensionId}/options/options.html`);
     assert.equal(await options.getAttribute('html', 'data-effects'), 'reduced');
     assert.equal(await options.isChecked('#reduceEffectsToggle'), true);
+  } finally { await env.close(); }
+});
+
+test('scroll buttons: ↑/↓ scroll the page and its inner panel to the top/bottom, leave small lists alone; Alt+T / Alt+B work', async () => {
+  const env = await launch();
+  try {
+    const { site, popup } = await env.open('/scroll');
+    const positions = () => site.evaluate(() => [Math.round(window.scrollY), document.getElementById('panel').scrollTop, document.getElementById('list').scrollTop]);
+    await site.evaluate(() => { window.scrollTo(0, 2500); document.getElementById('panel').scrollTop = 900; document.getElementById('list').scrollTop = 300; });
+    await popup.click('#scrollTopBtn');
+    // The first click also loads the extension's page script into the tab, so allow more time.
+    await site.waitForFunction(() => window.scrollY === 0 && document.getElementById('panel').scrollTop === 0, null, { timeout: 15000 });
+    assert.deepEqual(await positions(), [0, 0, 300]);
+    await popup.click('#scrollTopBtn');
+    await popup.waitForFunction(() => /already at the top/i.test(document.querySelector('.toast')?.textContent || ''), null, { timeout: 5000 });
+    await site.evaluate(() => window.scrollTo(0, 1200));
+    await popup.keyboard.press('Alt+t');
+    await site.waitForFunction(() => window.scrollY === 0, null, { timeout: 5000 });
+    // ↓: window and panel reach their bottom; the small list stays where it was.
+    await popup.click('#scrollBottomBtn');
+    const atBottom = () => site.evaluate(() => {
+      const se = document.scrollingElement, panel = document.getElementById('panel');
+      return se.scrollTop + window.innerHeight >= se.scrollHeight - 2 && panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 2;
+    });
+    await site.waitForFunction(() => {
+      const se = document.scrollingElement, panel = document.getElementById('panel');
+      return se.scrollTop + window.innerHeight >= se.scrollHeight - 2 && panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 2;
+    }, null, { timeout: 5000 });
+    assert.equal(await atBottom(), true);
+    assert.equal((await positions())[2], 300, 'small list not moved');
+    await popup.click('#scrollBottomBtn');
+    await popup.waitForFunction(() => /already at the bottom/i.test(document.querySelector('.toast')?.textContent || ''), null, { timeout: 5000 });
+    await site.evaluate(() => window.scrollTo(0, 0));
+    await popup.keyboard.press('Alt+b');
+    await site.waitForFunction(() => window.scrollY > 1000, null, { timeout: 5000 });
+    if (process.env.QAKITS_SHOTS) {
+      for (const width of [320, 440]) {
+        await popup.setViewportSize({ width, height: 640 });
+        await popup.locator('.sticky-fill-bar').screenshot({ path: path.join(process.env.QAKITS_SHOTS, `scrolltop-${width}.png`) });
+        await popup.evaluate(() => { const stop = document.getElementById('cancelFillBtn'); stop.hidden = false; stop.disabled = false; });
+        await popup.locator('.sticky-fill-bar').screenshot({ path: path.join(process.env.QAKITS_SHOTS, `scrolltop-${width}-running.png`) });
+        await popup.evaluate(() => { document.getElementById('cancelFillBtn').hidden = true; });
+      }
+    }
+    assert.deepEqual(env.errors, []);
   } finally { await env.close(); }
 });
 
@@ -867,7 +919,7 @@ test('uploads are filled in page order, every upload box gets a file, and a long
   } finally { await env.close(); }
 });
 
-test('setting "Keep values already in the form": off by default (values replaced); on, only empty fields are filled', async () => {
+test('setting "Keep values already in the form": on by default (only empty fields are filled); off, values are replaced', async () => {
   const env = await launch();
   try {
     const read = site => site.evaluate(() => ({
@@ -877,7 +929,8 @@ test('setting "Keep values already in the form": off by default (values replaced
       gender: document.querySelector('input[name=gender]:checked')?.value
     }));
     let { site, popup } = await env.open('/prefilled');
-    assert.equal(await popup.evaluate(async () => (await SFFAStorage.getSettings()).keepExistingValues), false, 'off by default');
+    assert.equal(await popup.evaluate(async () => (await SFFAStorage.getSettings()).keepExistingValues), true, 'on by default');
+    await popup.evaluate(() => SFFAStorage.updateSettings({ keepExistingValues: false }));
     await popup.click('#fillFormBtn');
     await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 60000 });
     let v = await read(site);
@@ -1249,6 +1302,8 @@ test('real-site patterns: email placeholder, date in the box\'s own format, prom
   const env = await launch();
   try {
     const { site, popup } = await env.open('/real-patterns');
+    // The date box starts with a value; this test checks it is replaced in the same format.
+    await popup.evaluate(() => SFFAStorage.updateSettings({ keepExistingValues: false }));
     await popup.click('#fillFormBtn');
     await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 90000 });
     const v = await site.evaluate(() => ({

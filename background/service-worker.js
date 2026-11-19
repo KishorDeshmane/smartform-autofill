@@ -5,7 +5,7 @@ if (typeof importScripts === 'function') {
   // Screenshot/capture support is optional. If it fails to load, everything else (storage,
   // messaging, filling) must keep working, so it is imported separately and guarded.
   try { importScripts('./report-capture.js'); }
-  catch (error) { console.error('[QA Kits] Capture module failed to load; capture features are disabled.', error); }
+  catch (error) { console.error('[QA Kit] Capture module failed to load; capture features are disabled.', error); }
 }
 
 const REPORT_CAPTURE_UNAVAILABLE = {
@@ -19,16 +19,19 @@ async function runStartupMigration(reason) {
   try {
     const result = await SFFAStorage.migrateLegacyFiles();
     if (result.migrated > 0 || result.failed > 0) {
-      console.log(`[QA Kits] File storage migration (${reason}): migrated ${result.migrated}, failed ${result.failed}`, result.errors || []);
+      console.log(`[QA Kit] File storage migration (${reason}): migrated ${result.migrated}, failed ${result.failed}`, result.errors || []);
     }
     return result;
   } catch (e) {
-    console.error('[QA Kits] File storage migration failed to run:', e);
+    console.error('[QA Kit] File storage migration failed to run:', e);
     return { ok: false, migrated: 0, failed: 0, errors: [{ error: e.message }] };
   }
 }
 
-/** Configures toolbar clicks to open the extension side panel where the API exists. */
+/**
+ * Configures toolbar clicks to open the extension side panel where the API exists (Chrome/Edge).
+ * Firefox keeps the toolbar popup; its "Open in side panel" button opens the Firefox sidebar.
+ */
 function configureSidePanelAction() {
   self.SFFAExt.sidePanel?.setPanelBehavior({ openPanelOnActionClick: true });
 }

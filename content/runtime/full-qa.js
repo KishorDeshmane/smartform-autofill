@@ -1,10 +1,10 @@
-// QA Kits page runtime — Full QA: isolated Positive/Negative/Boundary suite and optional submit.
+// QA Kit page runtime — Full QA: isolated Positive/Negative/Boundary suite and optional submit.
 // Generated from the former single-file content/content.js. Modules share state through
 // window.__SFFA_RT__ (RT) and each stays wrapped in its own function, so re-injection is safe.
 (function () {
   if (window.__SFFA_RT_SKIP__) return;
   const RT = window.__SFFA_RT__;
-  if (!RT) throw new Error('QA Kits: content/runtime/core.js must load first.');
+  if (!RT) throw new Error('QA Kit: content/runtime/core.js must load first.');
 
   function sleepMs(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 

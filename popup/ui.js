@@ -59,9 +59,17 @@ function initReduceEffects(root = document.documentElement) {
   });
 }
 
+/** True when this page is Firefox's toolbar popup (not its sidebar or a tab). */
+function isFirefoxPopup() {
+  try { return !!globalThis.browser?.extension?.getViews?.({ type: 'popup' })?.includes(window); }
+  catch (_) { return false; }
+}
+
 /** Initializes manual theme selection and popup/side-panel sizing. */
 function initThemeAndLayout() {
   const root = document.documentElement;
+  // Firefox sizes its popup from the page, so it needs a fixed size (Chrome opens the side panel instead).
+  if (isFirefoxPopup()) root.dataset.fixedPopup = '';
   const toggle = document.getElementById('themeToggle');
   // Cycle: system -> light -> dark -> system. Saved under `sffaTheme` ('system' | 'light' | 'dark').
   const ORDER = ['system', 'light', 'dark'];
@@ -150,7 +158,7 @@ function setExtensionContextBanner(isAvailable, message = '') {
   if (messageEl) messageEl.textContent = priority === 'no-tab'
     ? 'Open a website with a form to get started'
     : priority === 'needs-access'
-      ? (/tab list/i.test(message) ? 'Allow access so QA Kits can list your open website tabs.' : 'Allow QA Kits to read this tab so it can fill the form.')
+      ? (/tab list/i.test(message) ? 'Allow access so QA Kit can list your open website tabs.' : 'Allow QA Kit to read this tab so it can fill the form.')
       : priority === 'cannot-read'
         ? 'Can’t read this page yet. Reload the tab, then try again.'
         : 'Page ready';
@@ -164,7 +172,7 @@ function setExtensionContextBanner(isAvailable, message = '') {
     selectTab.hidden = priority === 'ready' || priority === 'needs-access';
     selectTab.setAttribute('aria-label', priority === 'cannot-read' ? 'Reload the selected tab and retry' : 'Choose a regular website tab');
   }
-  if (openPanel) openPanel.hidden = priority !== 'ready';
+  if (openPanel) openPanel.hidden = priority !== 'ready' || !window.SFFAExt?.sidePanel || (window.SFFAExt.sidePanel.isSidebar && !isFirefoxPopup());
   if (manage) manage.hidden = isAvailable;
   // Without site access the buttons stay clickable: clicking one asks Chrome for access first.
   const canUsePage = priority === 'ready' || priority === 'needs-access';
@@ -192,7 +200,7 @@ function installDisabledButtonExplanations() {
     if (!control.dataset.disabledReasonId) control.dataset.disabledReasonId = `${control.id || 'control'}DisabledReason`;
     const reasonId = control.dataset.disabledReasonId;
     let reason = document.getElementById(reasonId);
-    if (control.id === 'fillFormBtn' || control.matches('input[name="qaMode"]')) return;
+    if (control.id === 'fillFormBtn' || control.matches('.scroll-page-btn') || control.matches('input[name="qaMode"]')) return;
     // A button that is disabled because it is busy should not claim the page is unavailable.
     if (disabled && control.getAttribute('aria-busy') === 'true') {
       reason?.remove();
@@ -393,7 +401,7 @@ function debugSummary(source, raw) {
   }
   const time = new Date().toLocaleTimeString();
   const json = JSON.stringify(raw ?? null);
-  console.debug('[QA Kits summary]', { time, source, raw });
+  console.debug('[QA Kit summary]', { time, source, raw });
   if (line) {
     line.textContent = `last update: ${time}, source: ${source}, raw: ${json}`;
     line.classList.remove('hidden');

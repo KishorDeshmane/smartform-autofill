@@ -1,5 +1,5 @@
 {
-  "name": "qa-kits",
+  "name": "qa-kit",
   "version": "2.2.0",
   "private": true,
   "description": "Local QA form-filling browser extension",

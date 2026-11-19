@@ -1,10 +1,10 @@
-// QA Kits page runtime — Form fill and field-scoped QA fill runs.
+// QA Kit page runtime — Form fill and field-scoped QA fill runs.
 // Generated from the former single-file content/content.js. Modules share state through
 // window.__SFFA_RT__ (RT) and each stays wrapped in its own function, so re-injection is safe.
 (function () {
   if (window.__SFFA_RT_SKIP__) return;
   const RT = window.__SFFA_RT__;
-  if (!RT) throw new Error('QA Kits: content/runtime/core.js must load first.');
+  if (!RT) throw new Error('QA Kit: content/runtime/core.js must load first.');
 
   async function autoExpandCollapsedSections(log) {
     const EXPAND_LABELS = ['expand all', 'show all', 'expand all sections'];
@@ -77,6 +77,15 @@
 
       await RT.log(`Detected ${totalFields} fillable field(s).`, 'info');
       RT.reportProgress(0, totalFields);
+      // Live progress: share of fields handled so far, scaled to the detected count. It never goes back,
+      // stays below 100% until the fill really ends, and is sent at most every 250 ms.
+      let shownDone = 0, lastSent = 0;
+      const onProgress = (handled, waiting) => {
+        const done = Math.min(totalFields - 1, Math.round(totalFields * handled / Math.max(1, handled + waiting)));
+        if (done <= shownDone || Date.now() - lastSent < 250) return;
+        shownDone = done; lastSent = Date.now();
+        RT.reportProgress(done, totalFields);
+      };
 
       const files = await window.SFFAStorage.getFiles();
       const mappings = await window.SFFAStorage.getMappings();
@@ -93,7 +102,8 @@
           credentials: siteCredentials,
           repeatRows: settings.repeatRowsBySite?.[hostname] || [],
           multiSelectCount: settings.multiSelectCount || 2,
-          hydrateFiles: records => window.SFFAStorage.hydrateFileContents(records)
+          hydrateFiles: records => window.SFFAStorage.hydrateFileContents(records),
+          onProgress
         }
       );
 
@@ -148,9 +158,11 @@
       const validationErrors = [];
       const seenErrors = new Set();
       const seenCases = new Set();
+      RT.reportProgress(0, rounds, 'rounds');
       try {
         for (let round = 0; round < rounds; round++) {
           if (run.cancelled) break;
+          if (round) RT.reportProgress(round, rounds, 'rounds');
           const detected = round === 0 ? firstDetected : detectScoped();
           const pass = await engine.fillWithScenarioData(detected, mode, logger, {
             scenarioOffset: round, eachValueOnce: true, isCancelled: () => run.cancelled
@@ -320,8 +332,10 @@
       let units = testUnits(validDetected);
       if (options.targetKey) units = units.filter(unit => engine.fieldKey(unit.el) === options.targetKey);
       if (!units.length) throw new Error(options.targetKey ? 'The chosen field is no longer on the page. Pick it again.' : 'No fields to test.');
-      for (const unit of units) {
+      RT.reportProgress(0, units.length, 'fields');
+      for (const [unitIndex, unit] of units.entries()) {
         if (run.cancelled) break;
+        if (unitIndex) RT.reportProgress(unitIndex, units.length, 'fields');
         const count = unitValueCount(engine, mode, unit);
         let tested = false;
         for (let i = 0; i < count; i++) {

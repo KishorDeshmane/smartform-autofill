@@ -427,6 +427,12 @@
     for (let node = el.parentElement, depth = 0; node && depth < 3; node = node.parentElement, depth++) {
       if (node.matches('label, button, [role="button"]') && REPLACE_FILE_RE.test(controlText(node))) return true;
     }
+    // A "Replace document" button next to the input, inside the input's own upload box (a box that
+    // holds no other file input), means a document is already uploaded there.
+    for (let node = el.parentElement, depth = 0; node && depth < 3; node = node.parentElement, depth++) {
+      if (node.querySelectorAll('input[type="file"]').length > 1) break;
+      if (Array.from(node.querySelectorAll('button, [role="button"]')).some(b => REPLACE_FILE_RE.test(controlText(b)))) return true;
+    }
     return REPLACE_FILE_RE.test(`${el.getAttribute('aria-label') || ''} ${el.getAttribute('title') || ''}`);
   }
 

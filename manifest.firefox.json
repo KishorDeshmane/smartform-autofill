@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "QA Kits",
+  "name": "QA Kit",
   "version": "2.2.0",
   "description": "QA toolkit for testers: fill forms with fake test data, test wrong and edge values, upload files, scan pages, create test cases.",
   "permissions": [
@@ -25,12 +25,22 @@
   },
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "QA Kits",
+    "default_title": "QA Kit",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
+  },
+  "sidebar_action": {
+    "default_panel": "popup/popup.html",
+    "default_title": "QA Kit",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "open_at_install": false
   },
   "options_page": "options/options.html",
   "icons": {
@@ -53,7 +63,7 @@
       "suggested_key": {
         "default": "Ctrl+Shift+Y"
       },
-      "description": "Open QA Kits"
+      "description": "Open QA Kit"
     }
   }
 }

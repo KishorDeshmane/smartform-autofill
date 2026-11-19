@@ -1170,6 +1170,8 @@
         log(`"${fieldName}" has no file mapped to its type — using "${fileRecords[0].name}" (${choice.source === 'other' ? 'mapped to Other Document' : choice.source === 'anyStored' ? 'mapped to other types' : 'not mapped to any type'}) because it matches the accepted formats`, 'info');
       }
 
+      const errorWatch = watchUploadErrors(element, fileRecords.map(record => record.name));
+      let attachResult = null;
       const pageReaction = observeUploadPageReaction(element, fileRecords.map(record => record.name));
       const outcome = root.SFFAFileUploader.assignFilesToInput(element, fileRecords);
       if (outcome.success) options.touchedFileInputs?.add(element);
@@ -1220,7 +1222,8 @@
           log(`? ${notAttachedCount} extra mapped file(s) were not attached to this single-file field`, 'warn');
         }
         field.attachedOk = true;
-        results.push({ type, success: true, count, status: uploadStatus, pageResponse: reacted ? 'reacted' : 'none', ...(field.viaTrigger ? { label: field.label } : {}) });
+        attachResult = { type, success: true, count, status: uploadStatus, pageResponse: reacted ? 'reacted' : 'none', ...(field.viaTrigger ? { label: field.label } : {}) };
+        results.push(attachResult);
         // Let the page finish sending this file before the next one, when it locks its upload boxes meanwhile.
         const newlyLocked = () => Array.from(lockedFileInputs()).some(el => !lockedBefore.has(el));
         if (newlyLocked()) {
@@ -1229,8 +1232,51 @@
         }
       }
       await sleep(FILE_UPLOAD_GAP_MS);
+      // The page may refuse the file after reading it (wrong type, too large, server error): say so.
+      const refused = attachResult && errorWatch.read();
+      if (refused) {
+        attachResult.success = false;
+        attachResult.pageResponse = 'error';
+        attachResult.reason = `The page refused the file: ${refused}`;
+        field.attachedOk = false;
+        log(`✗ "${fieldName}": the page refused "${fileRecords.map(record => record.name).join(', ')}" — it says: "${refused}"`, 'error');
+      }
     }
     return results;
+  }
+
+  // Words a page uses when it refuses an upload ("Upload failed", "File type not allowed", "File too large" …).
+  const UPLOAD_ERROR_RE = /\b(fail(?:ed|ure|s)?|error|invalid|not (?:allowed|supported|accepted|permitted|valid)|unsupported|too (?:large|big|small)|exceeds?|rejected|could ?n[o']t|unable to|went wrong)\b/i;
+
+  /**
+   * Starts watching for an error message the page shows after an upload: new text with error words
+   * near the upload box, or in a pop-up message (alert, status, toast, snackbar). `read()` returns the
+   * first new message, or null. Text that was already there before the upload is ignored.
+   */
+  function watchUploadErrors(input, fileNames = []) {
+    const doc = input?.ownerDocument || document;
+    const POPUPS = '[role="alert"], [role="status"], [aria-live], [class*="toast" i], [data-sonner-toast], [class*="snackbar" i], [class*="notification" i]';
+    // A pop-up elsewhere on the page only counts when it is about a file (not "Invalid email").
+    const aboutFile = text => /\b(files?|uploads?|uploading|documents?|attach\w*|images?|photos?|pdf|size|type|format|extension|mb|kb)\b/i.test(text)
+      || fileNames.some(name => name && text.includes(name));
+    let box = input;
+    for (let depth = 0; depth < 4 && box?.parentElement && box.parentElement !== doc.body; depth++) box = box.parentElement;
+    const lines = () => {
+      const found = new Set();
+      const add = (el, needsFileWord) => String(el?.innerText ?? el?.textContent ?? '').split('\n').forEach(line => {
+        const text = line.replace(/\s+/g, ' ').trim();
+        if (text.length >= 4 && text.length <= 200 && UPLOAD_ERROR_RE.test(text) && (!needsFileWord || aboutFile(text))) found.add(text);
+      });
+      if (box?.isConnected) add(box, false);
+      doc.querySelectorAll(POPUPS).forEach(el => { if (!box?.contains(el)) add(el, true); });
+      return found;
+    };
+    const before = lines();
+    return {
+      read() {
+        try { return [...lines()].find(text => !before.has(text)) || null; } catch (_) { return null; }
+      }
+    };
   }
 
   /** Observes briefly for a new upload preview or success-like live message without reading file data. */
@@ -1273,7 +1319,7 @@
     const order = options.fillOrder || options.settings?.fillOrder || 'page';
     if (order !== 'type' && !options.dynamicDepth) return fillInPageOrder(detected, testData, storedFiles, mappings, log, options);
     // Setting "Keep values already in the form" (normal fills only; test runs must change values).
-    if (options.settings?.keepExistingValues === true && options.isolatedMode !== true) {
+    if (options.settings?.keepExistingValues !== false && options.isolatedMode !== true) {
       detected = withoutPrefilled(detected);
       const rescan = options.rescan;
       if (rescan) options = { ...options, rescan: () => withoutPrefilled(rescan()) };
@@ -2007,7 +2053,7 @@
     // on its own, and "Replace" inputs are not reported on every pass.
     const fileOptions = { ...options, touchedFileInputs: new WeakSet() };
     // Setting "Keep values already in the form" (normal fills only; test runs must change values).
-    const keepExisting = settings.keepExistingValues === true && options.isolatedMode !== true;
+    const keepExisting = settings.keepExistingValues !== false && options.isolatedMode !== true;
     const kept = new Set();
     /** True when a fill unit already shows a value it did not get from this fill. */
     const unitHasValue = unit => {
@@ -2225,10 +2271,13 @@
       }
     }
 
+    let unitsHandled = 0; // across every pass (tabs too), for the progress bar
     /** Fills every not-yet-done unit in page order, refreshing the list when the page changes. */
     async function fillPass() {
       let queue = buildUnits(scan()).filter(u => !done.has(unitKey(u)));
       let rescans = 0;
+      /** Tells the caller how far the fill is: fields handled so far and fields still waiting. */
+      const progress = () => { try { options.onProgress?.(++unitsHandled, queue.length); } catch (_) { /* Progress is optional. */ } };
       while (queue.length) {
         checkCancelled();
         if (location.href !== startUrl) {
@@ -2247,7 +2296,7 @@
           continue;
         }
         done.add(key);
-        if (keepExisting && unitHasValue(unit)) { kept.add(key); continue; }
+        if (keepExisting && unitHasValue(unit)) { kept.add(key); progress(); continue; }
         if (unit.kind === 'probe') {
           // Tick, and keep it only when new fields appear; otherwise put it back (optional boxes stay unticked).
           const before = new Set(buildUnits(scan()).map(unitKey));
@@ -2263,6 +2312,7 @@
           } else if (unit.el.checked) {
             setNativeCheckedState(unit.el, false);
           }
+          progress();
           continue;
         }
         const watch = CONTROLLER_KINDS.has(unit.kind) ? watchChanges(areaOf(unit.el)) : null;
@@ -2275,6 +2325,7 @@
           // The page re-drew fields that are still to come (uploads too): scan again.
           queue = buildUnits(scan()).filter(u => !done.has(unitKey(u)));
         }
+        progress();
       }
       return true;
     }

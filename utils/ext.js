@@ -23,7 +23,7 @@
 
   /** Logs an extension API error and signals storage failures to the logger when present. */
   function logError(message, error) {
-    console.error(`[QA Kits] ${message}`, error);
+    console.error(`[QA Kit] ${message}`, error);
     if (message.startsWith('Storage ')) root.__SFFA_STORAGE_ERROR__?.(message);
   }
 
@@ -274,6 +274,15 @@
     async open(options) {
       try { await chrome.sidePanel.open(options); return true; }
       catch (error) { logError('Could not open the side panel', error); return false; }
+    }
+  } : hasExt && globalThis.browser?.sidebarAction?.open ? {
+    // Firefox: no side panel API, but the sidebar shows the same page. open() must be called
+    // synchronously inside the user's click, so nothing is awaited before it.
+    isSidebar: true,
+    async setPanelBehavior() { return false; },
+    async open() {
+      try { await globalThis.browser.sidebarAction.open(); return true; }
+      catch (error) { logError('Could not open the sidebar', error); return false; }
     }
   } : null;
   const commands = hasExt && chrome.commands ? {

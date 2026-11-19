@@ -30,7 +30,7 @@ if (target === 'firefox') {
 } else {
   await cp(path.join(root, 'manifest.json'), path.join(dist, 'manifest.json'));
 }
-const zip = path.join(root, 'dist', `qa-kits-${target}.zip`);
+const zip = path.join(root, 'dist', `qa-kit-${target}.zip`);
 await rm(zip, { force: true });
 const entries = await zipDirectory(dist, zip);
 console.log(`Built ${zip} (${entries} files)`);

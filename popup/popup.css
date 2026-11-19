@@ -1,5 +1,5 @@
 /*
- * QA Kits — popup & side panel.
+ * QA Kit — popup & side panel.
  * All colours come from ../styles/tokens.css (loaded first). This file must not contain raw
  * colour values or important-flag overrides; scripts/verify-glass-popup.mjs enforces both.
  * Class names, IDs and data attributes are hooks used by popup scripts and verify scripts.
@@ -53,6 +53,9 @@ code, pre, kbd { font-family: var(--font-mono); }
   /* Never wider than the panel: long content (such as a long page address) shrinks instead of widening the column. */
   grid-template-columns: minmax(0, 1fr);
 }
+/* Firefox toolbar popup: it takes its size from the page, so give it a fixed one (Firefox max is 800 × 600). */
+:root[data-fixed-popup], :root[data-fixed-popup] body { width: 460px; height: 600px; }
+:root[data-fixed-popup] .app { height: 600px; }
 .app-inner { width: min(640px, 100%); margin-inline: auto; min-width: 0; }
 .content {
   min-height: 0;
@@ -549,13 +552,22 @@ input.switch:disabled { opacity: 0.5; cursor: not-allowed; }
   border-radius: var(--r-md);
   background: var(--surface-1);
 }
-.file-icon { width: 28px; height: 28px; display: grid; place-items: center; border-radius: var(--r-sm); background: var(--accent-soft); color: var(--accent-text); font-size: 0; }
-.file-icon::before { width: 16px; height: 16px; }
+.file-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: var(--r-sm); background: var(--accent-soft); color: var(--accent-text); overflow: hidden; flex-shrink: 0; }
+/* Documents: a type badge (PDF, DOC, …) in the colour of its kind. */
+.file-badge { border: 1px solid var(--accent-soft-border); font-size: var(--fs-11); font-weight: 700; letter-spacing: 0.02em; font-family: var(--font-mono); }
+.file-badge[data-kind="pdf"] { background: var(--danger-soft); border-color: var(--danger-border); color: var(--danger); }
+.file-badge[data-kind="doc"] { background: var(--info-soft); border-color: var(--info-border); color: var(--info); }
+.file-badge[data-kind="xls"] { background: var(--success-soft); border-color: var(--success-border); color: var(--success); }
+.file-badge[data-kind="txt"] { background: var(--warning-soft); border-color: var(--warning-border); color: var(--warning); }
+/* Images: a small preview of the stored picture. */
+.file-thumb { border: 1px solid var(--border-subtle); background: var(--surface-2); }
+.file-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .file-meta { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .file-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.file-sub { color: var(--text-tertiary); font-size: var(--fs-11); font-family: var(--font-mono); }
-.file-actions { display: flex; gap: var(--sp-1); }
-.file-mapping-dropdown { grid-column: 1 / -1; }
+.file-sub { color: var(--text-tertiary); font-size: var(--fs-11); font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Rename / Delete sit on the first row, right of the name; Categories gets its own row below. */
+.file-actions { display: flex; gap: var(--sp-1); grid-column: 3; grid-row: 1; }
+.file-mapping-dropdown { grid-column: 1 / -1; grid-row: 2; }
 .file-mapping-dropdown > summary { cursor: pointer; color: var(--accent-text); font-size: var(--fs-12); font-weight: 500; }
 .type-panel { margin-top: var(--sp-2); display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 2px var(--sp-2); }
 .type-panel-actions { grid-column: 1 / -1; display: flex; gap: var(--sp-2); margin-bottom: var(--sp-1); }
@@ -991,7 +1003,7 @@ kbd { display: inline-flex; align-items: center; min-height: 20px; padding: 0 6p
   min-height: var(--footer-h);
   max-height: var(--footer-h);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   grid-template-rows: auto auto;
   align-content: center;
   column-gap: var(--sp-2);
@@ -1005,6 +1017,13 @@ kbd { display: inline-flex; align-items: center; min-height: 20px; padding: 0 6p
 .sticky-fill-bar .btn-xl { grid-column: 1; grid-row: 1; width: 100%; min-height: 40px; box-shadow: var(--accent-glow); }
 .sticky-fill-bar .btn-xl:disabled { box-shadow: none; }
 .sticky-fill-bar #cancelFillBtn { grid-column: 2; grid-row: 1; min-height: 40px; }
+.sticky-fill-bar .scroll-page-group { grid-column: 3; grid-row: 1; display: flex; }
+.sticky-fill-bar #cancelFillBtn[hidden] + .scroll-page-group { margin-left: calc(-1 * var(--sp-2)); }
+.scroll-page-btn { width: 36px; min-height: 40px; padding: 0; }
+.scroll-page-btn:first-child { border-start-end-radius: 0; border-end-end-radius: 0; }
+.scroll-page-btn:last-child { margin-left: -1px; border-start-start-radius: 0; border-end-start-radius: 0; }
+.scroll-page-btn:focus-visible { position: relative; z-index: 1; }
+.scroll-page-btn[aria-busy="true"] { cursor: progress; opacity: 0.7; }
 .sticky-fill-bar .fill-button-reason { grid-column: 1 / -1; grid-row: 2; }
 .fill-button-reason { display: block; min-width: 0; min-height: 14px; color: var(--text-tertiary); font-size: var(--fs-11); line-height: 16px; text-align: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .fill-button-reason::after { content: attr(data-shortcut); margin-left: var(--sp-2); padding: 0 5px; border: 1px solid var(--border-strong); border-radius: 4px; font-family: var(--font-mono); font-size: 10px; }

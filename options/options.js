@@ -160,7 +160,7 @@ async function loadGenerationSettings() {
   document.getElementById('autoClearAfterDays').value = settings.autoClearAfterDays || 0;
   document.getElementById('fillOrder').value = settings.fillOrder === 'type' ? 'type' : 'page';
   document.getElementById('tickSameAsBoxes').checked = settings.tickSameAsBoxes === true;
-  document.getElementById('keepExistingValues').checked = settings.keepExistingValues === true;
+  document.getElementById('keepExistingValues').checked = settings.keepExistingValues !== false;
   document.getElementById('aiEndpointAllowlist').value = (settings.aiEndpointAllowlist || []).join(', ');
   document.getElementById('credentialsBySite').value = JSON.stringify(settings.credentialsBySite || {}, null, 2);
   document.getElementById('repeatRowsBySite').value = JSON.stringify(settings.repeatRowsBySite || {}, null, 2);

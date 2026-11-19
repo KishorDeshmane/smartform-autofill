@@ -196,7 +196,7 @@
     for(const el of fields){
       const kind=sensitiveKind(el);if(!kind||!enabled(el))continue;
       // Setting "Keep values already in the form": a password or code already typed stays.
-      if(settings.keepExistingValues===true&&(el.value||'').trim())continue;
+      if(settings.keepExistingValues!==false&&(el.value||'').trim())continue;
       let value=kind==='password'?safePassword:safeOtp;
       if(kind==='otp'&&otpBoxes.length>1&&otpBoxes.includes(el))value=typeof safeOtp==='string'?safeOtp[otpBoxes.indexOf(el)]:null;
       const ok=value!=null&&value!==''&&write(el,value);

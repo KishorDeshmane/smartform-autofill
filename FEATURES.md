@@ -1,4 +1,4 @@
-# QA Kits — How to use every feature
+# QA Kit — How to use every feature
 
 A step-by-step guide for testers. Button and setting names are written exactly as they appear in the extension.
 
@@ -36,13 +36,15 @@ Scanning first is optional. You can go straight to step 2.
 
 | Mode | Use it when | What happens |
 |---|---|---|
-| **Quick fill** | Most of the time. | Realistic fake data in every field, top to bottom like a person. Fields that appear after an answer (e.g. "City" after "State") are filled in their place. |
+| **Quick fill** | Most of the time. | Realistic fake data in every empty field, top to bottom like a person. Fields that already have a value are kept as they are (Options → General → **Keep values already in the form**). Fields that appear after an answer (e.g. "City" after "State") are filled in their place. |
 | **Valid data** | You want to confirm the form accepts correct input. | Same as Quick fill, but you choose **Which fields?** — **Required fields** and/or **Optional fields**. |
 | **Wrong data** | You want to check the form shows clear error messages. | Tries bad values (wrong email, short mobile, PAN in the wrong order, …) and judges each one. Original values are put back afterwards. |
 | **Edge cases** | You want to check limits. | Tries very short, very long, minimum and maximum values. Original values are put back afterwards. |
 | **Full QA run** | You want one combined check and a report. | Runs Valid data, Wrong data, then Edge cases, puts the values back, then offers the report to download. |
 
 Then press **Fill the form** (bottom of the popup). **Stop fill / QA run** stops at any time.
+
+The **↑** and **↓** buttons next to it scroll the web page to the top or the bottom, also during a fill. It works on pages that scroll an inner panel instead of the whole window, and leaves small lists (such as open dropdowns) alone.
 
 ### 2.2 Wrong data and Edge cases — extra choices
 
@@ -82,6 +84,7 @@ If some custom dropdowns could not be set back, the result says so by name (e.g.
    - If a box has no mapped file, an unmapped file in an accepted format is used. If every file is mapped to other kinds, one of those is used, so the box is not left empty.
    - If there are more upload boxes than files, files are used again so no box stays empty.
    - "Replace document" buttons on already uploaded files are never touched.
+   - If the page refuses a file (for example "File type not allowed" or "Upload failed"), that box is counted as failed and the Activity log shows the page's message.
    - If the page locks its upload boxes while it sends a file to its server, the extension waits (up to 30 seconds) before the next upload. If the page redraws its upload boxes, each file still goes to its own box.
 
 ---
@@ -160,7 +163,7 @@ Choose a **Network profile** (Normal, 4G, 3G, 2G, Slow 2G, Offline), click **App
 
 | Section | Main settings |
 |---|---|
-| **General** | **Allowed test environments** (header shows *Allowed test env* / *Not allowlisted*), **Same-origin link check limit**, **Multi-select choices per field**, spelling ignore list and dictionary, **Fill order** (*Page order* recommended), **Tick "Same as …" boxes**, **Keep values already in the form** (off by default — on: fields that already have a value are left alone), **Reduce visual effects**. |
+| **General** | **Allowed test environments** (header shows *Allowed test env* / *Not allowlisted*), **Same-origin link check limit**, **Multi-select choices per field**, spelling ignore list and dictionary, **Fill order** (*Page order* recommended), **Tick "Same as …" boxes**, **Keep values already in the form** (on by default: fields that already have a value are left alone; off: every field gets new test data), **Reduce visual effects**. |
 | **Data & seed** | **Identity number format**, **Email / mobile locale**, **Data seed** (same seed = same values; shown in the Full QA report), registration number pattern, test PIN codes, first/last name pools, **Import project test values (CSV or JSON)** (they win over generated values), repeatable rows by site. |
 | **Files & mappings** | Extra keywords that identify upload fields. |
 | **Site selectors** | Exact CSS selectors per field type for one website. Use **Pick field on active page**, then **Save site config**. |
@@ -179,6 +182,7 @@ Click **Save settings** at the bottom (site selectors have their own Save button
 | **Ctrl+Shift+Y** | Open the extension (change at `chrome://extensions/shortcuts`) |
 | **Alt+S** | Scan page |
 | **Alt+F** | Fill the form |
+| **Alt+T** / **Alt+B** | Scroll the web page to the top / bottom (same as the ↑ / ↓ buttons next to **Fill the form**) |
 | **Alt+1 / 2 / 3** | Test / Output / Setup tab |
 | **?** | Open help |
 | **Esc** | Close dialogs and menus |
