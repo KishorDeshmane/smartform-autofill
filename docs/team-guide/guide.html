@@ -37,12 +37,13 @@
   .cover .logo svg { width: 30pt; height: 30pt; fill: #fff; }
   .cover h1 { font-size: 38pt; margin: 22pt 0 6pt; letter-spacing: -.5pt; }
   .cover .tag { font-size: 14pt; opacity: .92; max-width: 380pt; }
-  .cover .who { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10pt; margin-top: 26pt; }
-  .cover .who div { background: rgb(255 255 255 / .13); border-radius: 10pt; padding: 10pt 12pt; font-size: 9.5pt; }
-  .cover .who b { display: block; font-size: 11pt; margin-bottom: 2pt; }
-  .cover .meta { font-size: 9.5pt; opacity: .85; display: flex; justify-content: space-between; }
+  .cover .eyebrow { font-size: 9.5pt; letter-spacing: 2pt; text-transform: uppercase; opacity: .8; margin-top: 26pt; }
+  .cover .rule { width: 56pt; height: 3pt; background: rgb(255 255 255 / .7); border-radius: 2pt; margin: 16pt 0 0; }
+  .cover .meta { font-size: 9.5pt; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid rgb(255 255 255 / .3); padding-top: 10pt; }
+  .cover .meta span { opacity: .85; }
+  .cover .meta b { display: block; font-size: 10.5pt; opacity: 1; }
   .cover img { width: 100%; border-radius: 10pt; box-shadow: 0 10pt 30pt rgb(0 0 0 / .35); }
-  .cover .shots { display: grid; grid-template-columns: 1.45fr 1fr; gap: 12pt; align-items: start; margin-top: 18pt; }
+  .cover .shots { display: grid; grid-template-columns: 1.45fr 1fr; gap: 12pt; align-items: start; margin-top: 30pt; }
 
   /* Contents */
   .toc { break-after: page; }
@@ -133,19 +134,16 @@
 <div class="cover">
   <div>
     <div class="logo"><svg viewBox="0 0 24 24"><path d="M13 2.5 4.5 13.5h6.5l-1 8 8.5-11h-6.5l1-8Z"/></svg></div>
-    <h1>QA Kit — Team Guide</h1>
-    <div class="tag">How to install, set up and use QA Kit, the browser extension that fills and tests web forms for you.</div>
-    <div class="who">
-      <div><b>Testers</b>Install, set up and use it: parts A and B, sections 12–13, and the appendices.</div>
-      <div><b>Team lead</b>Roll it out to the team: also section 11.</div>
-      <div><b>QA Kit owner (Kishor)</b>Publish updates: also section 15.</div>
-    </div>
+    <div class="eyebrow">Installation and user guide</div>
+    <h1 style="margin-top:8pt">QA Kit — Team Guide</h1>
+    <div class="tag">A browser extension that fills and tests web forms: installation, setup and everyday use.</div>
+    <div class="rule"></div>
     <div class="shots">
       <img src="shots/site-filled-form.png" alt="A registration form filled by QA Kit">
       <img src="shots/panel-test-tab.png" alt="The QA Kit panel">
     </div>
   </div>
-  <div class="meta"><span>Chrome, Edge and Firefox</span><span>Updated 22 November 2026</span></div>
+  <div class="meta"><span><b>Prepared by Kishor Deshmane</b>For the QA team</span><span style="text-align:right"><b>November 2026</b>Chrome · Edge · Firefox</span></div>
 </div>
 
 <!-- ============ CONTENTS ============ -->
