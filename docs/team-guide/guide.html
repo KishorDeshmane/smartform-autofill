@@ -138,7 +138,7 @@
     <div class="who">
       <div><b>Testers</b>Install, set up and use it: parts A and B, sections 12–13, and the appendices.</div>
       <div><b>Team lead</b>Roll it out to the team: also section 11.</div>
-      <div><b>QA Kit owner</b>Publish updates: also section 15.</div>
+      <div><b>QA Kit owner (Kishor)</b>Publish updates: also section 15.</div>
     </div>
     <div class="shots">
       <img src="shots/site-filled-form.png" alt="A registration form filled by QA Kit">
@@ -636,7 +636,7 @@
   </table>
 
   <h3>Getting the latest update</h3>
-  <p>When the QA Kit owner announces an update in the team channel, update straight away, so everyone tests with the same QA Kit.</p>
+  <p>When Kishor (the QA Kit owner) announces an update, update straight away, so everyone tests with the same QA Kit.</p>
   <ol class="steps">
     <li>Get the update <b>into the same folder</b> you installed from:
       <ul><li>Git users: run <code>git pull</code> in that folder.</li>
@@ -648,7 +648,7 @@
   <p>Your test files, mappings and settings are kept. Only <b>Setup → Danger zone → Clear all data</b> removes them.</p>
 
   <h3>Reporting a problem</h3>
-  <p>Post it in <span class="fill-in">[team channel — fill in]</span> or message the QA Kit owner, <span class="fill-in">[owner name — fill in]</span>. Include:</p>
+  <p>Message <b>Kishor</b> (QA Kit owner). Include:</p>
   <ol class="steps">
     <li>The page address (a test site) and what you expected to happen.</li>
     <li>The text from <b>Output → Activity log → View logs</b>.</li>
@@ -663,7 +663,6 @@
     <li><b>Check with IT.</b> Company-managed Chrome or Edge can block <b>Developer mode</b> or <b>Load unpacked</b>. Ask IT to allow QA Kit (or developer-mode extensions) for the QA team, or testers get stuck at section 2.</li>
     <li><b>Give repository access.</b> GitHub repository <b>Settings → Collaborators → Add people</b>, one per tester. Or share the ready-made zips instead (next step).</li>
     <li><b>Share ready-made zips</b> (<code>qa-kit-chrome.zip</code>, <code>qa-kit-firefox.zip</code>) in one place everyone can reach, for example a shared drive folder, and replace them there after each update.</li>
-    <li><b>Fill in the owner and the team channel</b> in section 10 (“Reporting a problem”).</li>
     <li><b>Prepare the shared setup</b> from section 13 (standard test files, allowed domains).</li>
     <li><b>Share this guide</b> and agree the team rules in section 12.</li>
     <li><b>Ask each tester to confirm</b> the checklist below.</li>
@@ -723,7 +722,7 @@
     <li><b>Build both packages:</b> <code>npm run build:chrome</code> and <code>npm run build:firefox</code> create <code>dist/qa-kit-chrome.zip</code> and <code>dist/qa-kit-firefox.zip</code>.</li>
     <li><b>Try it yourself:</b> reload the extension from <code>dist/chrome</code>, then do one Quick fill and one upload on a test form.</li>
     <li><b>Publish:</b> commit and push to <code>main</code>, and replace the two zips in the team’s shared folder.</li>
-    <li><b>Tell the team</b> in the team channel: what changed, and “please update (section 10)”.</li>
+    <li><b>Tell the team</b>: what changed, and “please update (section 10)”.</li>
   </ol>
   <div class="callout tip"><b>Good habits</b>
     <ul><li>Leave the number in <code>manifest.json</code> as it is. Chrome requires one, but the team tracks updates by date, not by number.</li>
@@ -757,7 +756,7 @@
     <dt>A result says “No error shown yet”. Is that a bug?</dt>
     <dd>Not always. Many forms check only when you press Save. Run Wrong data again with <b>Click Save / Submit after each wrong value</b> on (test sites only). If the form still accepts the wrong value, raise a bug.</dd>
     <dt>Who do I ask for help?</dt>
-    <dd><span class="fill-in">[owner name — fill in]</span>, or post in <span class="fill-in">[team channel — fill in]</span> (section 10).</dd>
+    <dd><b>Kishor</b> (section 10).</dd>
   </dl>
 </section>
 
@@ -815,7 +814,7 @@
     <div class="box"><h3>Something wrong?</h3>
       <ul><li>“Can’t read this page”: reload the tab</li><li><b>Access needed</b>: click Scan page → Allow</li><li>Field skipped: see the Activity log</li><li>Upload empty: add a file in an accepted format</li><li>Debugging bar: Restore normal / viewport</li></ul></div>
     <div class="box"><h3>Rules</h3>
-      <ul><li>Test sites only, never production</li><li>Dummy accounts and fake files only</li><li>Approved AI services only</li><li>Clear data on shared computers</li><li>Help: <span class="fill-in">[team channel]</span></li></ul></div>
+      <ul><li>Test sites only, never production</li><li>Dummy accounts and fake files only</li><li>Approved AI services only</li><li>Clear data on shared computers</li><li>Help: Kishor</li></ul></div>
   </div>
   <p style="margin-top:10pt;font-size:9pt;color:var(--muted)">Install / update: <span class="repo">https://github.com/KishorDeshmane/smartform-autofill</span> · Full guide: <code>docs/QA-Kit-Team-Guide.pdf</code></p>
 </section>
