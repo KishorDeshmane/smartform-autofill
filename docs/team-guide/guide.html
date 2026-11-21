@@ -47,9 +47,9 @@
   /* Contents */
   .toc { break-after: page; }
   .toc h2 { margin-bottom: 14pt; }
-  .toc .part { font-size: 9pt; font-weight: 700; letter-spacing: .8pt; text-transform: uppercase; color: var(--brand); margin: 14pt 0 4pt; }
+  .toc .part { font-size: 9pt; font-weight: 700; letter-spacing: .8pt; text-transform: uppercase; color: var(--brand); margin: 11pt 0 3pt; }
   .toc ol { list-style: none; padding: 0; margin: 0; }
-  .toc li { display: flex; gap: 10pt; padding: 5pt 0; border-bottom: 1px dotted var(--line); }
+  .toc li { display: flex; gap: 10pt; padding: 3.2pt 0; border-bottom: 1px dotted var(--line); }
   .toc li span:first-child { width: 22pt; color: var(--muted); font-weight: 650; }
   .toc li em { margin-left: auto; color: var(--muted); font-style: normal; font-size: 9pt; }
 
@@ -106,6 +106,22 @@
   .qs .card { border: 1px solid var(--line); border-radius: 11pt; padding: 12pt 14pt; background: #fff; break-inside: avoid; }
   .qs .card h3 { margin-top: 0; display: flex; gap: 8pt; align-items: center; }
   .qs .card h3 span { background: var(--brand); color: #fff; border-radius: 6pt; padding: 1pt 7pt; font-size: 9pt; }
+  .faq dt { font-weight: 650; margin-top: 9pt; break-after: avoid; }
+  .faq dd { margin: 2pt 0 0; color: var(--ink); }
+  .gloss { display: grid; grid-template-columns: 120pt 1fr; gap: 0; border-top: 1px solid var(--line); }
+  .gloss dt, .gloss dd { margin: 0; padding: 5pt 6pt; border-bottom: 1px solid var(--line); break-inside: avoid; }
+  .gloss dt { font-weight: 650; background: var(--soft); }
+  .new li { margin-bottom: 5pt; }
+  .new li b:first-child { color: var(--brand); }
+  .cheat { break-before: page; }
+  .cheat h2 { margin-bottom: 4pt; }
+  .cheat .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt; }
+  .cheat .box { border: 1.5px solid var(--brand); border-radius: 10pt; padding: 8pt 10pt; break-inside: avoid; }
+  .cheat .box h3 { margin: 0 0 4pt; color: var(--brand); font-size: 11pt; }
+  .cheat table { margin: 0; font-size: 9pt; }
+  .cheat td, .cheat th { padding: 3pt 5pt; }
+  .cheat ol, .cheat ul { margin: 0; font-size: 9.3pt; }
+  .repo { font-family: "Cascadia Code", Consolas, monospace; font-size: 9.2pt; color: var(--info); word-break: break-all; }
   .checklist { list-style: none; padding: 0; }
   .checklist li { padding-left: 20pt; position: relative; }
   .checklist li::before { content: ""; position: absolute; left: 0; top: 3pt; width: 11pt; height: 11pt; border: 1.5px solid #8a91a5; border-radius: 3pt; }
@@ -120,7 +136,7 @@
     <h1>QA Kit — Team Guide</h1>
     <div class="tag">How to install, set up and use QA Kit, the browser extension that fills and tests web forms for you.</div>
     <div class="who">
-      <div><b>Testers</b>Install, set up and use it: parts A and B, plus sections 12–13.</div>
+      <div><b>Testers</b>Install, set up and use it: parts A and B, sections 12–13, and the appendices.</div>
       <div><b>Team lead</b>Roll it out to the team: also section 11.</div>
       <div><b>QA Kit owner</b>Publish new versions: also section 15.</div>
     </div>
@@ -136,19 +152,20 @@
 <div class="toc">
   <h2>Contents</h2>
   <div class="part">Quick start</div>
-  <ol><li><span>★</span>Install and use QA Kit in 10 steps<em>one page</em></li></ol>
+  <ol><li><span>★</span>Install and use QA Kit in 10 steps<em>one page</em></li>
+  <li><span>★</span>What’s new in this version</li></ol>
   <div class="part">Part A — Get started</div>
   <ol>
     <li><span>1</span>What QA Kit is, and the golden rules</li>
     <li><span>2</span>Install in Chrome or Edge (recommended)</li>
     <li><span>3</span>Install in Firefox</li>
-    <li><span>4</span>First-time setup</li>
+    <li><span>4</span>First-time setup, and the Options page</li>
   </ol>
   <div class="part">Part B — Use it</div>
   <ol>
-    <li><span>5</span>Everyday workflow</li>
+    <li><span>5</span>Everyday workflow, and Submit / Save / Next in detail</li>
     <li><span>6</span>Fill modes and how to read the results</li>
-    <li><span>7</span>Other tools: uploads, recording, evidence, network, screen sizes, test cases</li>
+    <li><span>7</span>Other tools: security scan, uploads, recording, evidence, network, screen sizes, test cases</li>
     <li><span>8</span>Keyboard shortcuts</li>
     <li><span>9</span>What works and what does not</li>
   </ol>
@@ -161,6 +178,12 @@
     <li><span>14</span>Removing QA Kit</li>
     <li><span>15</span>Releasing a new version (QA Kit owner)</li>
   </ol>
+  <div class="part">Appendices</div>
+  <ol>
+    <li><span>A</span>Frequently asked questions</li>
+    <li><span>B</span>Glossary: the words used in QA Kit</li>
+    <li><span>C</span>Cheat sheet (print and keep beside your screen)</li>
+  </ol>
 </div>
 
 <!-- ============ QUICK START ============ -->
@@ -171,7 +194,7 @@
     <div class="card">
       <h3><span>Install</span> about 2 minutes</h3>
       <ol class="steps">
-        <li>Get the QA Kit folder: <b>Code → Download ZIP</b> on GitHub, or the zip from a teammate. Extract it to a <b>permanent</b> place, such as <code>Documents\QA Kit</code>.</li>
+        <li>Get the QA Kit folder: on <span class="repo">https://github.com/KishorDeshmane/smartform-autofill</span> click <b>Code → Download ZIP</b>, or get the zip from a teammate. Extract it to a <b>permanent</b> place, such as <code>Documents\QA Kit</code>.</li>
         <li>Open <code>chrome://extensions</code> (or <code>edge://extensions</code>).</li>
         <li>Turn on <span class="ui">Developer mode</span>.</li>
         <li>Click <span class="ui">Load unpacked</span> and choose the folder that contains <code>manifest.json</code>.</li>
@@ -194,6 +217,22 @@
   <div class="callout warn"><b>Two rules to remember</b>
     <ul><li>Use QA Kit on <b>test, dev or staging sites only</b>, never on production or real customer data.</li>
     <li>Never move or delete the QA Kit folder after installing: Chrome runs the extension from it.</li></ul></div>
+</section>
+
+<section>
+  <h2 style="margin-top:18pt"><span class="num">★</span>What’s new in this version</h2>
+  <p>If you used an earlier version (it was called SmartForm AutoFill, then QA Kits), these are the changes you will notice:</p>
+  <ul class="new">
+    <li><b>New name: QA Kit.</b> Your saved files, mappings and settings are kept.</li>
+    <li><b>Recording without Chrome’s “debugging” bar.</b> Console errors and failed requests are now recorded by QA Kit itself. Chrome’s bar only appears for network profiles, screen sizes and, for a moment, the evidence screenshot.</li>
+    <li><b>↑ / ↓ buttons</b> next to <span class="ui">Fill the form</span> (<kbd>Alt</kbd>+<kbd>T</kbd> / <kbd>Alt</kbd>+<kbd>B</kbd>) scroll the web page to the top or bottom.</li>
+    <li><b>Keeps what is already in the form.</b> Quick fill and Valid data fill only empty fields (setting <b>Keep values already in the form</b>, on by default).</li>
+    <li><b>Many more wrong values</b> in Wrong data: for example 10 kinds of wrong email and 9 kinds of wrong mobile number.</li>
+    <li><b>Full QA no longer downloads by itself.</b> A report card offers the HTML report, JSON data and screenshot; download only what you need.</li>
+    <li><b>Upload fixes:</b> uploads happen in page order; every box gets a file even when you have fewer files than boxes; a box that already holds a document is never overwritten; every “Browse Files” card gets its own file; files the site refuses are reported as failed.</li>
+    <li><b>Step 3 now presses Submit and Confirm buttons</b> (still preview only until you turn that off), and never Pay, Delete or Checkout.</li>
+    <li><b>Firefox:</b> the popup has a proper size, and <span class="ui">Open in side panel</span> opens the Firefox sidebar.</li>
+  </ul>
 </section>
 
 <!-- ============ PART A ============ -->
@@ -223,9 +262,9 @@
   <table>
     <thead><tr><th style="width:28%">Way</th><th>What to do</th><th style="width:26%">Best for</th></tr></thead>
     <tbody>
-      <tr><td><b>A. Download from GitHub</b></td><td>Open the QA Kit repository (ask the owner for access), click <span class="ui">Code → Download ZIP</span>, and extract the ZIP.</td><td>Most testers</td></tr>
+      <tr><td><b>A. Download from GitHub</b></td><td>Open <span class="repo">https://github.com/KishorDeshmane/smartform-autofill</span> (private: ask the owner for access), click <span class="ui">Code → Download ZIP</span>, and extract the ZIP.</td><td>Most testers</td></tr>
       <tr><td><b>B. Zip from a teammate</b></td><td>Ask for <code>qa-kit-chrome.zip</code> (or download it from the GitHub Release), and extract it.</td><td>No GitHub access</td></tr>
-      <tr><td><b>C. Git clone</b></td><td><code>git clone &lt;repository address&gt; "%USERPROFILE%\Documents\QA Kit"</code></td><td>Technical users (easiest to update)</td></tr>
+      <tr><td><b>C. Git clone</b></td><td><code>git clone https://github.com/KishorDeshmane/smartform-autofill.git "%USERPROFILE%\Documents\QA Kit"</code></td><td>Technical users (easiest to update)</td></tr>
     </tbody>
   </table>
   <div class="callout warn"><b>Put the folder somewhere permanent, and keep it there</b>
@@ -258,7 +297,7 @@
   <h2><span class="num">3</span>Install in Firefox</h2>
   <p>Firefox runs form scanning, filling, uploads, test cases and exports. <b>Recording, evidence screenshots, network profiles and screen sizes are Chrome/Edge only.</b></p>
   <ol class="steps">
-    <li>Get <code>qa-kit-firefox.zip</code> from a teammate or the GitHub Release (or build it: <code>npm install</code>, then <code>npm run build:firefox</code>).</li>
+    <li>Get <code>qa-kit-firefox.zip</code> from a teammate or the Releases page of <span class="repo">https://github.com/KishorDeshmane/smartform-autofill</span> (or build it: <code>npm install</code>, then <code>npm run build:firefox</code>).</li>
     <li>Open <code>about:debugging#/runtime/this-firefox</code>.</li>
     <li>Click <span class="ui">Load Temporary Add-on…</span> and pick the zip, or <code>manifest.json</code> inside the extracted Firefox folder.</li>
     <li>Click the QA Kit icon in the toolbar. It opens as a popup. To keep it beside the page, click <span class="ui">Open in side panel</span> in the popup, or use <b>View → Sidebar → QA Kit</b>.</li>
@@ -301,17 +340,32 @@
       <p>Files stay in your browser. They are only ever put into the form you are testing.</p>
     </div>
   </div>
-  <h3>4.4 Settings worth a look</h3>
-  <p>Open <b>Setup → Advanced settings &amp; file mappings</b>:</p>
+  <h3>4.4 The Options page (advanced settings)</h3>
+  <p>Open it from <b>Setup → Advanced settings &amp; file mappings</b>. The menu on the left has seven pages. Click <span class="ui">Save settings</span> at the bottom when you change something (Site selectors have their own Save button).</p>
   <table>
-    <thead><tr><th style="width:32%">Setting</th><th>Why</th></tr></thead>
+    <thead><tr><th style="width:22%">Page</th><th>What it is for</th></tr></thead>
     <tbody>
-      <tr><td><b>Allowed test environments</b></td><td>List your team’s test domains. The header then shows <i>Allowed test env</i>, so you always know you are on a safe site.</td></tr>
-      <tr><td><b>Keep values already in the form</b></td><td>On by default: only empty fields are filled. Turn it off to replace every value.</td></tr>
-      <tr><td><b>Data seed</b></td><td>The same seed gives the same fake values every time, so a run can be repeated exactly.</td></tr>
-      <tr><td><b>Identity number format, Email / mobile locale</b></td><td>Match the fake data to your country and formats.</td></tr>
+      <tr><td><b>General</b></td><td><b>Allowed test environments</b>: list your team’s test domains, so the header shows <i>Allowed test env</i> (or warns <i>Not allowlisted</i>). Also the link-check limit, spelling ignore list and dictionary, <b>Fill order</b> (keep <i>Page order</i>), <b>Tick “Same as …” boxes</b>, and <b>Keep values already in the form</b> (on: only empty fields are filled).</td></tr>
+      <tr><td><b>Data &amp; seed</b></td><td>How fake values look: <b>Identity number format</b>, <b>Email / mobile locale</b>, test PIN codes, first and last name pools, registration number pattern. <b>Data seed</b>: the same seed gives the same values every time, so a run can be repeated. <b>Import project test values (CSV or JSON)</b>: use your own test data; imported values win over generated ones.</td></tr>
+      <tr><td><b>Files &amp; mappings</b></td><td>Extra words that tell QA Kit a box is an upload of a certain kind (for example “board resolution”).</td></tr>
+      <tr><td><b>Site selectors</b></td><td>For a page where QA Kit misses or confuses a field: type the website name, then the exact CSS selector for each field type (or click <b>Pick field on active page</b> and click the field). Save with <b>Save site config</b>. It applies to that website only.</td></tr>
+      <tr><td><b>Credentials</b></td><td>Test logins per website, used when a form needs them. <b>Not encrypted</b>: throwaway test accounts only.</td></tr>
+      <tr><td><b>AI endpoints</b></td><td>The AI service addresses the AI assistant may use. Only company-approved ones.</td></tr>
+      <tr><td><b>Privacy &amp; data</b></td><td><b>Auto-clear data after inactive days</b> (0 = never).</td></tr>
     </tbody>
   </table>
+  <div class="two">
+    <figure><img src="shots/options-data.png" alt="Options, Data and seed"><figcaption><b>Data &amp; seed</b>: formats, seed, name pools and <b>Import project test values</b>.</figcaption></figure>
+    <figure><img src="shots/options-site-selectors.png" alt="Options, Site selectors"><figcaption><b>Site selectors</b>: tell QA Kit exactly which box is which on one website.</figcaption></figure>
+  </div>
+  <div class="callout tip"><b>Using your own test data</b>
+    <p>Make a CSV with two columns, <code>field,value</code> (for example <code>PAN number,ABCDE1234F</code>), or a JSON object such as <code>{"Email address": "tester@acme.test"}</code>, and import it under <b>Data &amp; seed</b>. Field names can be the label, the field name or the field type. Every fill then uses your values for those fields and fake data for the rest.</p></div>
+  <h3>Danger zone (Setup tab)</h3>
+  <ul>
+    <li><b>Clear files</b>: deletes all stored test files and mappings.</li>
+    <li><b>Clear credentials</b>: deletes saved test logins for all sites.</li>
+    <li><b>Clear all data</b>: deletes everything (files, mappings, logins, logs, generated data, reports, settings). It asks first.</li>
+  </ul>
 </section>
 
 <!-- ============ PART B ============ -->
@@ -333,6 +387,23 @@
   <div class="two">
     <figure><img src="shots/panel-after-fill.png" alt="Fill result"><figcaption>After <b>Fill the form</b>: 12 fields filled, 1 file attached, 0 skipped.</figcaption></figure>
     <figure><img src="shots/site-filled-form.png" alt="Filled form"><figcaption>The same form, filled with fake data, the upload attached and the consent box ticked.</figcaption></figure>
+  </div>
+  <div class="avoid">
+  <h3>Submit, save or go next (step 3) in detail</h3>
+  <div class="side">
+    <div>
+      <p>QA Kit can press the page’s Submit, Save or Next button for you. It shows what it would press first.</p>
+      <ol class="steps">
+        <li>Open <span class="ui">Submit, save or go next</span> on the Test tab.</li>
+        <li>Click <span class="ui">Find page actions</span>. QA Kit lists the safe buttons it found (here: <i>create account</i>, a form submit). Delete, Remove, Cancel, Back, Close, Reset, Log out, Pay and Checkout are always skipped.</li>
+        <li>Or click <span class="ui">Pick element</span>, then click any button on the page. A card shows what you picked and how many matching buttons the page has.</li>
+        <li><span class="ui">Preview only (don’t actually click)</span> is on by default, so nothing is pressed. Turn it off to really click (asked once).</li>
+        <li>Press <span class="ui">Submit / Save / Next</span>. <span class="ui">Stop action</span> stops at once.</li>
+      </ol>
+      <p><b>Many identical buttons</b> (for example 100 Save buttons in a table): in the picked-element card choose the wait between clicks (1–10 seconds). Under <span class="ui">Advanced action settings</span>, <b>Pause when 100 or more matching actions are found</b> adds that pause so the site is not flooded.</p>
+    </div>
+    <figure style="margin-top:0"><img src="shots/panel-page-actions.png" alt="Submit, save or go next"><figcaption>Step 3 after <b>Find page actions</b>, with Preview only on.</figcaption></figure>
+  </div>
   </div>
   <div class="callout tip"><b>Tip: scroll the page from QA Kit</b>
     <p>The <b>↑</b> and <b>↓</b> buttons next to <span class="ui">Fill the form</span> (<kbd>Alt</kbd>+<kbd>T</kbd> / <kbd>Alt</kbd>+<kbd>B</kbd>) scroll the web page to the top or bottom, even during a fill.</p></div>
@@ -356,6 +427,10 @@
     <li><b>Field</b>: test all fields, or pick one.</li>
     <li><b>Click Save / Submit after each wrong value</b>: for forms that show errors only after Save. Test sites only, because if the form wrongly accepts a value, it may really save it.</li>
   </ul>
+  <div class="two">
+    <figure><img src="shots/panel-wrong-data-options.png" alt="Wrong data options"><figcaption><b>Wrong data</b> chosen: <i>One field at a time</i>, field <i>Email address</i>.</figcaption></figure>
+    <figure><img src="shots/panel-wrong-data-results.png" alt="Wrong data results"><figcaption>The result: each wrong email, and whether the form showed an error.</figcaption></figure>
+  </div>
   <h3>Reading the results</h3>
   <table>
     <thead><tr><th style="width:26%">Result</th><th>Meaning</th><th style="width:30%">What to do</th></tr></thead>
@@ -367,6 +442,10 @@
     </tbody>
   </table>
   <div class="avoid">
+  <div class="callout tip"><b>How to read the example above</b>
+    <p>10 wrong emails were tried. <b>6 Passed</b>: the form refused them with a message (shown under each one). <b>3 No error shown yet</b>: the form accepted “two dots in a row” and “starts with a dot” without complaining, so check them on Save, or raise a bug if the form should catch them. <b>1 Accepted — check manually</b>: a value some forms allow.</p></div>
+  </div>
+  <div class="avoid">
   <h3>Full QA run, step by step</h3>
   <ol class="steps">
     <li>Click <span class="ui">Full QA run</span>.</li>
@@ -375,10 +454,41 @@
     <li>When it finishes, the <b>Download the Full QA report</b> card offers <b>HTML report</b>, <b>JSON data</b> and, with recording on, a <b>Page screenshot</b>. The card comes back if you reopen QA Kit on the same page.</li>
   </ol>
   </div>
+  <div class="side-l">
+    <figure style="margin-top:0"><img src="shots/panel-full-qa-report.png" alt="Full QA result"><figcaption>End of a Full QA run.</figcaption></figure>
+    <div>
+      <h3 style="margin-top:0">Reading the Full QA result</h3>
+      <ul>
+        <li><b>Modes completed</b>: positive (valid data), negative (wrong data) and boundary (edge cases) all ran.</li>
+        <li><b>Filled / attached</b> and <b>Skipped</b> count every value tried across all three modes.</li>
+        <li><b>Verified accepted</b>: values the form clearly accepted or refused as expected.</li>
+        <li><b>Unverified — could not verify</b>: the form gave no clear sign. Each one is listed with the reason, usually “No error shown yet”. Run Wrong data again with <b>Click Save / Submit…</b> on to check them.</li>
+        <li><b>Page state</b>: whether every field was put back afterwards. If not, the field is named.</li>
+        <li>The <b>HTML report</b> button saves the same result as a page you can attach to a ticket or share.</li>
+      </ul>
+    </div>
+  </div>
 </section>
 
 <section>
   <h2><span class="num">7</span>Other tools</h2>
+  <div class="side">
+    <div>
+      <h3 style="margin-top:0">Security scan</h3>
+      <p>On the Test tab, <span class="ui">Security scan</span> looks at the page for common security problems a tester can see from the browser:</p>
+      <ul>
+        <li><b>Encryption:</b> login or payment boxes on a plain <code>http</code> page, forms that submit over <code>http</code>, and files loaded over <code>http</code> on a secure page (mixed content).</li>
+        <li><b>Risky code:</b> <code>eval</code> / <code>document.write</code>, inline event handlers (<code>onclick=…</code>), external scripts without an integrity check (SRI), insecure WebSocket or <code>postMessage</code> use.</li>
+        <li><b>Leaks:</b> secret-looking values in page fields, and tokens or passwords kept in browser storage.</li>
+        <li><b>Links and passwords:</b> new-tab links without <code>rel="noopener"</code>, password boxes without proper autocomplete settings.</li>
+        <li><b>Privacy:</b> third-party trackers (Google Analytics, Meta Pixel, Hotjar, Clarity and others).</li>
+        <li><b>Forms without a visible anti-forgery (CSRF) token</b>, marked UNVERIFIED.</li>
+      </ul>
+      <p>It gives a <b>Security score</b> out of 100 and a list of findings, each marked High, Medium or Low with <b>How to fix</b>. <b>UNVERIFIED</b> means “can’t tell from the page alone”: check it with the developers. <span class="ui">Copy report</span> copies everything as text for your bug ticket.</p>
+      <p style="color:var(--muted);font-size:9.3pt">It is a quick passive check of what the page shows, not a penetration test. It never attacks or changes the site.</p>
+    </div>
+    <figure style="margin-top:0"><img src="shots/panel-security-scan.png" alt="Security scan result"><figcaption>A security scan of the demo form.</figcaption></figure>
+  </div>
   <h3>Upload fields</h3>
   <p>After you add and map files (section 4.3), every upload box gets a file of the right kind, in page order. If a box has no mapped file, QA Kit uses another file in a format the box accepts, so no box stays empty. Boxes that already hold a document (“Replace document”) are never touched. If the site refuses a file, the box counts as failed and the Activity log shows the site’s message.</p>
 
@@ -564,6 +674,95 @@
     <ul><li>One version, one release: don’t change files after publishing a version, make a new one.</li>
     <li>When a tester reports a page QA Kit can’t fill, ask for the saved page and the Activity log, fix it, add a test for it, and include it in the next release.</li>
     <li>Never change the Firefox add-on ID (<code>qa-kits@local.qakits</code>), or Firefox users lose their stored data.</li></ul></div>
+</section>
+
+<div class="part-title"><small>Appendices</small><h1>FAQ, glossary and cheat sheet</h1><p>Quick answers, the words QA Kit uses, and a one-page summary to print.</p></div>
+
+<section>
+  <h2><span class="num">A</span>Frequently asked questions</h2>
+  <dl class="faq">
+    <dt>Does QA Kit send my data anywhere?</dt>
+    <dd>No. Everything stays in your browser: test files, settings and results. The only exception is the optional AI assistant, which sends your question (and, if you tick it, the page structure without field values) to the AI service set in Options, and only after showing you the request.</dd>
+    <dt>Can I use it on the live (production) website?</dt>
+    <dd>No. It types fake data and may submit forms. Use test, dev or staging sites only (section 12).</dd>
+    <dt>Why did it skip a field?</dt>
+    <dd>Common reasons: the field already had a value (<b>Keep values already in the form</b> is on), it is disabled or hidden, it is a widget QA Kit can’t fill (signature pad, captcha, a frame from another website), or no stored file fits an upload box. The Activity log names each skipped field and the reason.</dd>
+    <dt>Why does Chrome say “QA Kit started debugging this browser”?</dt>
+    <dd>Chrome shows this bar while a network profile or screen size is on, and for a moment during the evidence screenshot. Click <b>Restore normal</b> / <b>Restore viewport</b> to remove it. Recording does not cause it.</dd>
+    <dt>Will it press Submit or Pay by itself?</dt>
+    <dd>No. Filling never submits. Step 3 is preview-only until you turn that off, and it never presses Pay, Checkout, Delete, Cancel or Log out.</dd>
+    <dt>Does it work on mobile phones?</dt>
+    <dd>No, it is a desktop browser extension. To see how a form looks on a phone, use <b>Setup → Viewport</b> with a phone preset.</dd>
+    <dt>Does it work in Edge, Firefox or Safari?</dt>
+    <dd>Edge: yes, everything (same as Chrome). Firefox: yes, without recording, screenshots, network and screen sizes. Safari: no.</dd>
+    <dt>My files and settings disappeared.</dt>
+    <dd>You probably loaded a new version from a different folder. Remove that copy in <code>chrome://extensions</code>, and update the original folder instead (section 10).</dd>
+    <dt>Can two testers share settings?</dt>
+    <dd>Not automatically yet. Follow section 13 to keep everyone’s setup the same.</dd>
+    <dt>A result says “No error shown yet”. Is that a bug?</dt>
+    <dd>Not always. Many forms check only when you press Save. Run Wrong data again with <b>Click Save / Submit after each wrong value</b> on (test sites only). If the form still accepts the wrong value, raise a bug.</dd>
+    <dt>Who do I ask for help?</dt>
+    <dd><span class="fill-in">[owner name — fill in]</span>, or post in <span class="fill-in">[team channel — fill in]</span> (section 10).</dd>
+  </dl>
+</section>
+
+<section>
+  <h2 style="margin-top:16pt"><span class="num">B</span>Glossary</h2>
+  <dl class="gloss">
+    <dt>Activity log</dt><dd>Output tab → step-by-step record of what QA Kit did, including why a field was skipped. Copy it into bug reports.</dd>
+    <dt>Allowed test environments</dt><dd>Your list of safe test domains (Options → General). The header warns when you are on another site.</dd>
+    <dt>Data seed</dt><dd>Any text. The same seed makes QA Kit generate the same fake values again, so a run can be repeated exactly.</dd>
+    <dt>Developer mode</dt><dd>A switch on <code>chrome://extensions</code> that allows installing an extension from a folder (<b>Load unpacked</b>).</dd>
+    <dt>Edge cases</dt><dd>Values at the limits: very short, very long, smallest and largest allowed.</dd>
+    <dt>Evidence screenshot</dt><dd>A full-page picture with the recorded errors underneath (Output → Reports).</dd>
+    <dt>Load unpacked</dt><dd>The button that installs QA Kit from its folder.</dd>
+    <dt>Mapping</dt><dd>Telling QA Kit which kind of document a test file is (Photo, ID proof…), so the right file goes into each upload box.</dd>
+    <dt>Network profile</dt><dd>Makes the page load as if on a slow connection (4G, 3G, 2G, Offline).</dd>
+    <dt>Preview only</dt><dd>Step 3 shows what it would click without clicking. On by default.</dd>
+    <dt>Recording</dt><dd>Collecting console errors and failed network requests while you test (setting <b>Capture activity during fill</b>).</dd>
+    <dt>Side panel</dt><dd>The QA Kit panel on the right of the Chrome / Edge window (Firefox: the sidebar).</dd>
+    <dt>Site selectors</dt><dd>Exact instructions for one website saying which box is which field (Options → Site selectors).</dd>
+    <dt>Test environment</dt><dd>A copy of a website for testing (test, dev, staging, UAT), never the live one.</dd>
+    <dt>Valid / Wrong data</dt><dd>Correct values that the form should accept / bad values it should refuse with a clear message.</dd>
+    <dt>Viewport</dt><dd>The visible size of the page. Setup → Viewport makes the page act like a phone, tablet or laptop screen.</dd>
+  </dl>
+</section>
+
+<section class="cheat">
+  <h2><span class="num">C</span>QA Kit cheat sheet</h2>
+  <p style="color:var(--muted)">Print this page and keep it beside your screen. Test sites only.</p>
+  <div class="cols">
+    <div class="box"><h3>Every day</h3>
+      <ol><li>Open the form (test site)</li><li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Y</kbd> to open QA Kit</li><li>Optional: <b>Scan page</b> (<kbd>Alt</kbd>+<kbd>S</kbd>)</li><li>Choose a mode</li><li><b>Fill the form</b> (<kbd>Alt</kbd>+<kbd>F</kbd>)</li><li>Check the result and the Activity log</li><li>Submit yourself, or step 3 (preview first)</li></ol></div>
+    <div class="box"><h3>Shortcuts</h3>
+      <table><tbody>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Y</kbd></td><td>Open QA Kit</td></tr>
+        <tr><td><kbd>Alt</kbd>+<kbd>S</kbd> / <kbd>Alt</kbd>+<kbd>F</kbd></td><td>Scan / Fill</td></tr>
+        <tr><td><kbd>Alt</kbd>+<kbd>T</kbd> / <kbd>Alt</kbd>+<kbd>B</kbd></td><td>Page top / bottom</td></tr>
+        <tr><td><kbd>Alt</kbd>+<kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>Test / Output / Setup</td></tr>
+        <tr><td><kbd>?</kbd> / <kbd>Esc</kbd></td><td>Help / close</td></tr>
+      </tbody></table></div>
+    <div class="box"><h3>Modes</h3>
+      <table><tbody>
+        <tr><td><b>Quick fill</b></td><td>Fake data in every empty field</td></tr>
+        <tr><td><b>Valid data</b></td><td>Correct values: required / optional</td></tr>
+        <tr><td><b>Wrong data</b></td><td>Bad values: are errors shown?</td></tr>
+        <tr><td><b>Edge cases</b></td><td>Too short, too long, min, max</td></tr>
+        <tr><td><b>Full QA run</b></td><td>All three + downloadable report</td></tr>
+      </tbody></table></div>
+    <div class="box"><h3>Results</h3>
+      <table><tbody>
+        <tr><td><span class="pill p-ok">Passed</span></td><td>Form refused it: good</td></tr>
+        <tr><td><span class="pill p-warn">No error shown yet</span></td><td>Retry with Click Save / Submit</td></tr>
+        <tr><td><span class="pill p-bad">Failed</span></td><td>Raise a bug</td></tr>
+        <tr><td><span class="pill p-info">Check manually</span></td><td>You decide</td></tr>
+      </tbody></table></div>
+    <div class="box"><h3>Something wrong?</h3>
+      <ul><li>“Can’t read this page”: reload the tab</li><li><b>Access needed</b>: click Scan page → Allow</li><li>Field skipped: see the Activity log</li><li>Upload empty: add a file in an accepted format</li><li>Debugging bar: Restore normal / viewport</li></ul></div>
+    <div class="box"><h3>Rules</h3>
+      <ul><li>Test sites only, never production</li><li>Dummy accounts and fake files only</li><li>Approved AI services only</li><li>Clear data on shared computers</li><li>Help: <span class="fill-in">[team channel]</span></li></ul></div>
+  </div>
+  <p style="margin-top:10pt;font-size:9pt;color:var(--muted)">Install / update: <span class="repo">https://github.com/KishorDeshmane/smartform-autofill</span> · Full guide: <code>docs/QA-Kit-Team-Guide.pdf</code></p>
 </section>
 
 </body>

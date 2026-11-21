@@ -140,6 +140,66 @@ try {
   await popup.click('#tabSetupButton');
   await popup.waitForTimeout(500);
   await popup.screenshot({ path: path.join(outDir, 'panel-setup-tab.png') });
+  // Helper: scroll the panel so an element sits near the top, then take a full-panel shot.
+  const panelShot = async (selector, file, offset = 130) => {
+    await popup.evaluate(([sel, off]) => {
+      document.querySelectorAll('.toast').forEach(t => t.remove());
+      const el = document.querySelector(sel);
+      const scroller = el.closest('.content, .app-scroll') || document.scrollingElement;
+      scroller.scrollTop += el.getBoundingClientRect().top - off;
+    }, [selector, offset]);
+    await popup.waitForTimeout(400);
+    await popup.screenshot({ path: path.join(outDir, file) });
+  };
+
+  // Security scan.
+  await popup.click('#tabTestButton');
+  await popup.waitForTimeout(300);
+  await popup.click('#securityScanBtn');
+  await popup.waitForSelector('#copySecurityScanBtn:not([hidden])', { timeout: 30000 }).catch(() => {});
+  await popup.waitForTimeout(800);
+  await panelShot('#scanResult', 'panel-security-scan.png', 200);
+
+  // Page actions: find the Submit/Save buttons (preview only).
+  await popup.evaluate(() => { const d = document.getElementById('actionDetails'); if (d && 'open' in d) d.open = true; });
+  await popup.click('#scanActionButtonsBtn');
+  await popup.waitForSelector('#actionButtonPreview:not(.hidden)', { timeout: 20000 });
+  await popup.waitForTimeout(500);
+  await panelShot('#actionDetails', 'panel-page-actions.png');
+
+  // Wrong data on the email field, one field at a time.
+  await popup.check('input[name="qaMode"][value="negative"]', { force: true });
+  await popup.waitForFunction(() => [...document.querySelectorAll('#qaTargetField option')].some(o => /mail/i.test(o.textContent)), null, { timeout: 10000 });
+  const emailKey = await popup.$eval('#qaTargetField', sel => [...sel.options].find(o => /mail/i.test(o.textContent)).value);
+  await popup.selectOption('#qaTargetField', emailKey);
+  await popup.waitForTimeout(300);
+  await panelShot('input[name="qaMode"][value="negative"]', 'panel-wrong-data-options.png', 260);
+  await popup.click('#fillFormBtn');
+  await popup.waitForSelector('#fillResult .scenario-results', { timeout: 120000 });
+  await popup.evaluate(() => { const first = document.querySelector('#fillResult .scenario-field'); if (first && 'open' in first) first.open = true; });
+  await popup.waitForTimeout(600);
+  await panelShot('#fillResult', 'panel-wrong-data-results.png', 180);
+
+  // Full QA run: the report card at the end.
+  await popup.click('#fullQaModeButton');
+  await popup.waitForTimeout(300);
+  await popup.click('#fillFormBtn');
+  await popup.waitForSelector('#fullQaDownloads:not(.hidden)', { timeout: 300000 });
+  await popup.waitForTimeout(800);
+  await panelShot('#fillResult', 'panel-full-qa-report.png', 180);
+
+  // Options page: site selectors and project test values.
+  const options = await context.newPage();
+  await options.setViewportSize({ width: 1100, height: 760 });
+  await options.goto(`chrome-extension://${id}/options/options.html#selectors`);
+  await options.waitForTimeout(1200);
+  await options.evaluate(() => document.getElementById('selectors')?.scrollIntoView({ block: 'start' }));
+  await options.waitForTimeout(400);
+  await options.screenshot({ path: path.join(outDir, 'options-site-selectors.png') });
+  await options.evaluate(() => document.getElementById('importedTestDataFile')?.closest('section, .panel, .card')?.scrollIntoView({ block: 'start' }));
+  await options.waitForTimeout(400);
+  await options.screenshot({ path: path.join(outDir, 'options-data.png') });
+
   console.log('ok', (await fs.readdir(outDir)).join(', '));
 } finally {
   await context.close();

@@ -8,7 +8,7 @@ if (!['chrome', 'firefox'].includes(target)) throw new Error('Usage: build-exten
 const dist = path.join(root, 'dist', target);
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
-const excluded = new Set(['node_modules', '.git', 'dist', 'scripts', 'tests', 'tests-e2e', 'screenshots', '.vscode', 'package.json', 'package-lock.json', 'eslint.config.js', 'eslint.config.mjs', '.editorconfig', '.gitattributes', '.gitignore', 'popup-full-preview.png', 'debug.log', 'chrome-screenshot-profile']);
+const excluded = new Set(['node_modules', '.git', 'dist', 'scripts', 'tests', 'tests-e2e', 'screenshots', 'docs', '.vscode', 'package.json', 'package-lock.json', 'eslint.config.js', 'eslint.config.mjs', '.editorconfig', '.gitattributes', '.gitignore', 'popup-full-preview.png', 'debug.log', 'chrome-screenshot-profile']);
 async function copyDir(source, destination) {
   await mkdir(destination, { recursive: true });
   for (const entry of await readdir(source, { withFileTypes: true })) {
