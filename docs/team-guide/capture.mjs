@@ -11,7 +11,7 @@ const { chromium } = await import(pathToFileURL(path.join(project, 'node_modules
 await fs.mkdir(outDir, { recursive: true });
 const ORIGIN = 'https://demo.qakit.test';
 
-const FORM_PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>Customer registration</title><style>
+const FORM_PAGE = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Customer registration</title><style>
   body{font:15px/1.5 "Segoe UI",system-ui,sans-serif;background:#f3f5f9;margin:0;color:#1d2433}
   header{background:#1f3a8a;color:#fff;padding:14px 32px;font-weight:600;font-size:17px}
   main{max-width:760px;margin:28px auto;background:#fff;border-radius:12px;padding:28px 32px;box-shadow:0 2px 12px rgb(0 0 0/.08)}
@@ -23,6 +23,7 @@ const FORM_PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>Custo
   fieldset label{flex-direction:row;font-weight:400;align-items:center;display:inline-flex;margin-right:16px}
   .upload{border:2px dashed #c9d0dc;border-radius:10px;padding:14px;text-align:center;color:#5b6475}
   .check{flex-direction:row;font-weight:400;align-items:center}
+  @media (max-width:600px){main{margin:12px;padding:18px}.grid{grid-template-columns:1fr}}
   button{background:#1f3a8a;color:#fff;border:0;border-radius:8px;padding:11px 22px;font:inherit;font-weight:600;margin-top:18px}
 </style></head><body><header>Acme Bank · Test environment</header><main>
 <h1>Customer registration</h1><p class="sub">All fields marked * are required.</p>
@@ -187,6 +188,21 @@ try {
   await popup.waitForSelector('#fullQaDownloads:not(.hidden)', { timeout: 300000 });
   await popup.waitForTimeout(800);
   await panelShot('#fillResult', 'panel-full-qa-report.png', 180);
+
+  // Network and Viewport tools (Setup tab).
+  await popup.click('#tabSetupButton');
+  await popup.waitForTimeout(400);
+  await popup.evaluate(() => { const d = document.getElementById('networkProfile')?.closest('details'); if (d) d.open = true; });
+  await popup.selectOption('#networkProfile', '3g');
+  await popup.waitForTimeout(300);
+  await panelShot('#networkProfile', 'panel-network.png', 260);
+  await popup.evaluate(() => { const d = document.getElementById('viewportPreset')?.closest('details'); if (d) d.open = true; });
+  await popup.selectOption('#viewportPreset', 'iphone-14').catch(() => {});
+  await popup.waitForTimeout(300);
+  await popup.click('#viewportPreviewBtn');
+  await popup.waitForFunction(() => /^data:image/.test(document.getElementById('viewportPreviewImage')?.getAttribute('src') || ''), null, { timeout: 90000 }).catch(() => {});
+  await popup.waitForTimeout(800);
+  await panelShot('#viewportPreset', 'panel-viewport.png', 200);
 
   // Options page: site selectors and project test values.
   const options = await context.newPage();

@@ -165,7 +165,7 @@
   <ol>
     <li><span>5</span>Everyday workflow, and Submit / Save / Next in detail</li>
     <li><span>6</span>Fill modes and how to read the results</li>
-    <li><span>7</span>Other tools: security scan, uploads, recording, evidence, network, screen sizes, test cases</li>
+    <li><span>7</span>Other tools: security scan, uploads, recording, evidence, network speeds, screen sizes (viewport), test cases</li>
     <li><span>8</span>Keyboard shortcuts</li>
     <li><span>9</span>What works and what does not</li>
   </ol>
@@ -498,15 +498,71 @@
       <p>On the <b>Setup</b> tab, turn on <span class="ui">Capture activity during fill</span>. While you fill and test, QA Kit records console errors and failed network requests (404, 500…). The counts appear in <b>Output → QA summary → More metrics</b>, and Full QA also offers a <b>Page screenshot</b>. Recording ends when the page reloads or you leave it; <span class="ui">Stop capturing</span> ends it sooner.</p>
       <h3>Page evidence screenshot <span class="pill p-info">Chrome/Edge</span></h3>
       <p><b>Output → Reports → Capture page evidence (PNG)</b> saves a full-page screenshot with the recorded errors underneath, ready to attach to a bug. Chrome shows its “QA Kit started debugging this browser” bar for a moment while it takes the picture. That is normal.</p>
-      <h3>Slow networks and screen sizes <span class="pill p-info">Chrome/Edge</span></h3>
-      <ul>
-        <li><b>Network</b>: choose a <b>Network profile</b> (4G, 3G, 2G, Slow 2G, Offline) and click <b>Apply</b>. It stays on until <b>Restore normal</b>.</li>
-        <li><b>Viewport</b>: choose a <b>Device preset</b> or type a width and height, then <b>Apply to current page</b>. It stays on until <b>Restore viewport</b>. <b>Preview at this size</b> only shows a picture.</li>
-        <li>While either is on, Chrome shows its “debugging” bar. Restoring removes it.</li>
-      </ul>
+      <p>Slow networks and screen sizes have their own pages next: <b>Network</b> and <b>Viewport</b>.</p>
     </div>
     <figure style="margin-top:0"><img src="shots/panel-setup-tab.png" alt="Setup tab"><figcaption>The Setup tab. <b>Capture activity during fill</b> turns recording on.</figcaption></figure>
   </div>
+
+  <h3>Network: test slow and offline connections <span class="pill p-info">Chrome/Edge</span></h3>
+  <div class="side">
+    <div>
+      <p>Makes the page in this tab load as if you were on a slow mobile connection, or offline, so you can see how the form behaves for real users with weak signal. Only this tab is affected.</p>
+      <ol class="steps">
+        <li>Open the <b>Setup</b> tab and open <span class="ui">Network</span>.</li>
+        <li>Choose a <b>Network profile</b> (table below) and click <span class="ui">Apply</span>.</li>
+        <li>Use the page as normal: reload it, fill the form, submit it. The profile stays on, also after reloads, until you change it.</li>
+        <li>Click <span class="ui">Restore normal</span> when you finish.</li>
+      </ol>
+      <p style="font-size:9.3pt;color:var(--muted)">While a profile is on, Chrome shows its “QA Kit started debugging this browser” bar. <b>Restore normal</b> removes it. The speeds are close to real networks, not exact.</p>
+    </div>
+    <figure style="margin-top:0"><img src="shots/panel-network.png" alt="Network profile"><figcaption>Setup → <b>Network</b>, with 3G chosen.</figcaption></figure>
+  </div>
+  <table>
+    <thead><tr><th style="width:20%">Profile</th><th style="width:38%">Behaves like</th><th>Use it to check</th></tr></thead>
+    <tbody>
+      <tr><td><b>4G</b></td><td>Good mobile data (about 100 ms delay)</td><td>Normal mobile use</td></tr>
+      <tr><td><b>3G</b></td><td>Average mobile data (about 0.4 s delay, under 1 Mbps)</td><td>Loading messages, slow dropdowns and uploads</td></tr>
+      <tr><td><b>2G / Slow 2G</b></td><td>Very weak signal (1.5–2 s delay, very slow)</td><td>Time-outs, double clicks on Submit, half-loaded pages</td></tr>
+      <tr><td><b>Fast / Slow / Very slow</b></td><td>The same idea with the exact speed shown in the list</td><td>When you need a precise speed for a bug report</td></tr>
+      <tr><td><b>Offline</b></td><td>No connection at all</td><td>The error message when the internet drops</td></tr>
+    </tbody>
+  </table>
+  <div class="callout tip"><b>What to check on a slow or offline network</b>
+    <ul>
+      <li>A clear loading sign appears while data loads or a file uploads, and the page doesn’t look frozen.</li>
+      <li>Pressing <b>Submit</b> twice doesn’t create two records (the button is disabled while it sends).</li>
+      <li>Dropdowns that load their options (State → City) still fill in, or say they are loading.</li>
+      <li>When the request fails or times out, the form shows a helpful message and keeps what the user typed.</li>
+      <li>Offline: the page says the connection is lost instead of failing silently.</li>
+    </ul></div>
+
+  <h3>Viewport: test phone, tablet and laptop sizes <span class="pill p-info">Chrome/Edge</span></h3>
+  <div class="side">
+    <div>
+      <p>Shows the page at the screen size of a real device, without a phone. Phone and tablet presets also behave like the device: mobile layout, touch input and the device’s screen sharpness (for example 3× on an iPhone).</p>
+      <ol class="steps">
+        <li>Open the <b>Setup</b> tab and open <span class="ui">Viewport</span>.</li>
+        <li>Choose a <span class="ui">Device preset</span>: <b>Phones</b> (iPhone, Samsung Galaxy, Pixel…), <b>Tablets</b> (iPad, Galaxy Tab, Surface), <b>Laptops &amp; desktops</b> (1280 to 2560 wide) or <b>CSS breakpoints</b>. Or type your own <b>Width</b> and <b>Height</b> (200 to 3000 pixels).</li>
+        <li><span class="ui">Rotate</span> swaps width and height (portrait ↔ landscape).</li>
+        <li>Then pick one:
+          <ul>
+            <li><span class="ui">Apply to current page</span>: the real page in this tab changes to that size, and you can click, type and fill it as on the device. It stays, also after reloads and moving to other pages in this tab, until <span class="ui">Restore viewport</span>.</li>
+            <li><span class="ui">Preview at this size</span>: a quick full-page picture only, the page itself is not changed. Click the picture to zoom (− / + / Reset). It also says whether the page scrolls sideways.</li>
+            <li><span class="ui">Open page in a resized window</span> (under the preview): opens the page in a new browser window of that size.</li>
+          </ul></li>
+      </ol>
+    </div>
+    <figure style="margin-top:0"><img src="shots/panel-viewport.png" alt="Viewport preview"><figcaption>iPhone 12 / 13 / 14 preset (390 × 844, 3×, touch) and its preview: <i>no horizontal overflow</i>.</figcaption></figure>
+  </div>
+  <div class="callout tip"><b>What to check at each size</b>
+    <ul>
+      <li><b>No sideways scrolling.</b> The preview line says <i>no horizontal overflow</i>; if it says there is overflow, part of the page is cut off on that device.</li>
+      <li>Every field, label and error message is readable and not covered by another element.</li>
+      <li>Buttons (Submit, Next, upload) are visible and big enough to tap; dropdowns and date pickers open properly with touch.</li>
+      <li>Fill the form with QA Kit while <b>Apply to current page</b> is on, to test the whole form at phone size.</li>
+      <li>Try at least one small phone (320 wide), one normal phone (390), one tablet and the most common laptop (1366 × 768).</li>
+    </ul></div>
+  <p style="font-size:9.3pt;color:var(--muted)">While a size is applied, Chrome shows its “debugging” bar; <b>Restore viewport</b> removes it. Viewport changes the page’s screen size, not the browser window (use <b>Open page in a resized window</b> for that).</p>
 
   <div class="side-l">
     <figure style="margin-top:0"><img src="shots/panel-output-tab.png" alt="Output tab with test cases"><figcaption>Output tab: QA summary and 111 generated test cases.</figcaption></figure>

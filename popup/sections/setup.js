@@ -254,6 +254,8 @@ async function onViewportPreviewClick() {
   const supportStatus = document.getElementById('viewportSupportStatus');
   if (supportStatus) supportStatus.textContent = 'Requesting Chrome DevTools permissions for screenshot preview…';
   if (!(await ensureCapturePermissions())) { if (supportStatus) supportStatus.textContent = 'This tool needs Chrome or Edge (it uses Chrome DevTools). Reload the extension at chrome://extensions if you just updated it.'; return; }
+  // Permission is fine: put the line back (the preview's own status shows progress below).
+  if (supportStatus) supportStatus.textContent = 'Chrome / Edge only.';
   const button = document.getElementById('viewportPreviewBtn');
   const resultEl = document.getElementById('viewportPreviewResult');
   const widthInput = document.getElementById('viewportWidth');
