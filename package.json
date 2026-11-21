@@ -13,7 +13,8 @@
     "test:e2e": "npm run build:chrome && node --test --test-concurrency=1 --test-timeout=180000 \"tests-e2e/*.mjs\"",
     "verify:responsive": "node scripts/verify-responsive.mjs",
     "guide:shots": "npm run build:chrome && node docs/team-guide/capture.mjs . docs/team-guide/shots",
-    "guide:pdf": "node docs/team-guide/make-pdf.mjs . docs/team-guide docs/QA-Kit-Team-Guide.pdf"
+    "guide:pdf": "node docs/team-guide/make-pdf.mjs . docs/team-guide docs/QA-Kit-Team-Guide.pdf",
+    "guide:quick": "node docs/team-guide/make-pdf.mjs . docs/team-guide docs/QA-Kit-Quick-Guide.pdf quick-guide.html \"QA Kit — Quick Guide\""
   },
   "devDependencies": {
     "axe-core": "^4.14.0",

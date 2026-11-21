@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>QA Kit — Quick Guide</title>
+<style>
+  :root {
+    --ink: #1b2030; --muted: #5a6276; --line: #e2e5ee; --soft: #f6f7fb;
+    --brand: #5b3fe0; --brand-dark: #2a1e8c; --brand-soft: #efebff;
+    --ok: #12804a; --ok-soft: #e6f5ec; --warn: #9a5b00; --warn-soft: #fff4e0;
+    --bad: #b42318; --bad-soft: #fdecea; --info: #1f5fbf; --info-soft: #e9f2fd;
+  }
+  @page { size: A4; margin: 14mm 15mm 16mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font: 9.6pt/1.5 "Segoe UI", system-ui, sans-serif; color: var(--ink); background: #fff; }
+  h1, h2, h3 { margin: 0; line-height: 1.25; }
+  h2 { font-size: 12.5pt; color: var(--brand-dark); margin: 13pt 0 6pt; display: flex; align-items: center; gap: 7pt; break-after: avoid; }
+  h2 .n { display: inline-grid; place-items: center; width: 18pt; height: 18pt; border-radius: 5pt; background: var(--brand); color: #fff; font-size: 9.5pt; }
+  h3 { font-size: 10pt; margin: 8pt 0 3pt; break-after: avoid; }
+  p { margin: 0 0 5pt; }
+  ul, ol { margin: 0 0 5pt; padding-left: 15pt; }
+  li { margin: 0 0 2pt; }
+  b { font-weight: 650; }
+  code, kbd { font-family: "Cascadia Code", Consolas, monospace; font-size: 8.6pt; }
+  code { background: var(--soft); border: 1px solid var(--line); border-radius: 3pt; padding: 0 3pt; }
+  kbd { border: 1px solid #c7ccd8; border-bottom-width: 2px; border-radius: 3pt; padding: 0 3pt; white-space: nowrap; background: #fff; }
+  .ui { font-weight: 650; color: #3b2bb3; }
+  .muted { color: var(--muted); }
+  .small { font-size: 8.6pt; }
+
+  header { background: linear-gradient(135deg, var(--brand-dark), var(--brand) 65%, #8b5cf6); color: #fff; border-radius: 10pt; padding: 14pt 18pt; display: flex; justify-content: space-between; align-items: flex-end; }
+  header h1 { font-size: 22pt; letter-spacing: -.3pt; }
+  header p { margin: 3pt 0 0; opacity: .9; font-size: 10pt; }
+  header .meta { text-align: right; font-size: 8.6pt; opacity: .9; }
+  header .meta b { display: block; font-size: 9.5pt; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12pt; }
+  .side { display: grid; grid-template-columns: 1fr 148pt; gap: 12pt; align-items: start; }
+  .box { border: 1px solid var(--line); border-radius: 8pt; padding: 8pt 11pt; background: var(--soft); break-inside: avoid; }
+  .box h3 { margin-top: 0; }
+  .note { border-left: 3pt solid var(--warn); background: var(--warn-soft); border-radius: 0 6pt 6pt 0; padding: 5pt 9pt; margin: 6pt 0; font-size: 8.9pt; break-inside: avoid; }
+  .note.info { border-color: var(--info); background: var(--info-soft); }
+  .note.bad { border-color: var(--bad); background: var(--bad-soft); }
+  img { width: 100%; border: 1px solid var(--line); border-radius: 6pt; display: block; }
+  figcaption { font-size: 8pt; color: var(--muted); margin-top: 3pt; text-align: center; }
+  figure { margin: 0; }
+
+  table { width: 100%; border-collapse: collapse; margin: 2pt 0 6pt; break-inside: avoid; }
+  th, td { text-align: left; vertical-align: top; padding: 3.5pt 6pt; border-bottom: 1px solid var(--line); }
+  th { font-size: 8.4pt; text-transform: uppercase; letter-spacing: .4pt; color: var(--muted); background: var(--soft); }
+  .pill { display: inline-block; border-radius: 99pt; padding: 0 6pt; font-size: 8.3pt; font-weight: 650; white-space: nowrap; }
+  .ok { background: var(--ok-soft); color: var(--ok); } .warn { background: var(--warn-soft); color: var(--warn); }
+  .bad { background: var(--bad-soft); color: var(--bad); } .info { background: var(--info-soft); color: var(--info); }
+  .cr { font-size: 7.6pt; font-weight: 650; color: var(--info); background: var(--info-soft); border-radius: 3pt; padding: 0 4pt; margin-left: 3pt; white-space: nowrap; }
+
+  .steps { counter-reset: s; list-style: none; padding-left: 0; }
+  .steps > li { counter-increment: s; position: relative; padding-left: 20pt; margin-bottom: 4pt; }
+  .steps > li::before { content: counter(s); position: absolute; left: 0; top: 1pt; width: 14pt; height: 14pt; border-radius: 50%; background: var(--brand-soft); color: var(--brand); font-size: 8pt; font-weight: 700; display: grid; place-items: center; }
+  .page-break { break-before: page; }
+  .rules { background: var(--brand-dark); color: #fff; border-radius: 8pt; padding: 9pt 12pt; break-inside: avoid; }
+  .rules h3 { color: #fff; margin-top: 0; }
+  .rules ul { margin: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>QA Kit — Quick Guide</h1>
+    <p>Fill and test any web form in seconds. Install, use, done.</p>
+  </div>
+  <div class="meta"><b>Owner: Kishor Deshmane</b>November 2026 · Chrome · Edge · Firefox</div>
+</header>
+
+<h2><span class="n">1</span>What QA Kit does</h2>
+<p>A browser extension for testers. On any web form it <b>fills every field</b> with realistic fake data (names, emails, mobiles, PAN, dates, dropdowns, uploads), <b>tests the form</b> with wrong and extreme values to find missing validations, <b>scans the page</b> for accessibility and security problems, and <b>creates test cases</b> you can export.</p>
+
+<h2><span class="n">2</span>Install (2 minutes)</h2>
+<div class="grid2">
+  <div class="box">
+    <h3>Chrome or Edge</h3>
+    <ol class="steps">
+      <li>Get the QA Kit folder: GitHub <b>Code → Download ZIP</b> (ask the owner for access) or a zip from a teammate. Extract it to a <b>permanent</b> place, e.g. <code>Documents\QA Kit</code>.</li>
+      <li>Open <code>chrome://extensions</code> or <code>edge://extensions</code>.</li>
+      <li>Turn on <span class="ui">Developer mode</span>, click <span class="ui">Load unpacked</span>.</li>
+      <li>Select the folder that directly contains <code>manifest.json</code>.</li>
+      <li>Pin QA Kit from the puzzle-piece icon.</li>
+    </ol>
+  </div>
+  <div class="box">
+    <h3>Firefox <span class="muted small">(fewer features)</span></h3>
+    <ol class="steps">
+      <li>Get <code>qa-kit-firefox.zip</code> from the owner or the shared folder.</li>
+      <li>Open <code>about:debugging#/runtime/this-firefox</code>.</li>
+      <li>Click <span class="ui">Load Temporary Add-on…</span> and pick the zip.</li>
+    </ol>
+    <p class="small muted">Firefox removes it when it closes, so load it again after a restart. “Appears to be corrupt” means you used <i>Install Add-on From File</i>: use the steps above instead.</p>
+  </div>
+</div>
+<figure style="margin:8pt auto 0;width:80%"><img src="shots/install-extensions-page.png" alt="chrome://extensions with Developer mode on and QA Kit loaded"><figcaption>Developer mode (top right), Load unpacked (top left), QA Kit loaded. The ↻ icon reloads it after an update.</figcaption></figure>
+<div class="note"><b>Never move or delete the folder.</b> Chrome runs QA Kit from it. Loading it from a different folder later makes your files and settings look lost. Chrome’s “Disable developer mode extensions” message: close it, don’t click Disable.</div>
+
+<h2><span class="n">3</span>Update</h2>
+<p>When the owner announces an update: put the new files <b>into the same folder</b> (<code>git pull</code>, or copy the new zip’s contents over it and choose Replace), click <b>↻</b> on QA Kit in <code>chrome://extensions</code>, and reload your test pages. Your files and settings stay.</p>
+
+<!-- ============ PAGE 2 ============ -->
+<h2 class="page-break" style="margin-top:0"><span class="n">4</span>Daily use</h2>
+<div class="side">
+  <div>
+    <ol class="steps">
+      <li>Open the form on a <b>test site</b> and press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Y</kbd> (or click the icon). QA Kit opens on the right.</li>
+      <li>Header says <span class="ui">Access needed</span>? Click <span class="ui">Scan page</span> and choose <b>Allow</b>. Once per site.</li>
+      <li><b>Optional:</b> <span class="ui">Scan page</span> (<kbd>Alt</kbd>+<kbd>S</kbd>) lists the fields found and page issues.</li>
+      <li>Choose a <b>mode</b> (table below). Use <b>Quick fill</b> most of the time.</li>
+      <li>Press <span class="ui">Fill the form</span> (<kbd>Alt</kbd>+<kbd>F</kbd>). The green box shows filled / skipped. Details: <b>Output → Activity log</b>.</li>
+      <li>Submit the form yourself. Or use <span class="ui">Submit, save or go next</span>: it starts in <b>Preview only</b> and never presses Delete, Cancel, Log out or Pay.</li>
+    </ol>
+    <p class="small muted">Panel tabs: <b>Test</b> (scan, fill, submit) · <b>Output</b> (results, test cases, reports, logs) · <b>Setup</b> (recording, network, screen sizes, settings). Fields that already have a value are kept.</p>
+  </div>
+  <figure><img src="shots/panel-test-tab.png" alt="QA Kit Test tab"><figcaption>The Test tab.</figcaption></figure>
+</div>
+
+<h3>Fill modes</h3>
+<table>
+  <thead><tr><th style="width:17%">Mode</th><th>What it does</th><th style="width:30%">Use it to</th></tr></thead>
+  <tbody>
+    <tr><td><b>Quick fill</b></td><td>Realistic fake data in every empty field, including fields that appear later (City after State)</td><td>Fill forms fast</td></tr>
+    <tr><td><b>Valid data</b></td><td>Correct values in required and/or optional fields</td><td>Confirm correct input is accepted</td></tr>
+    <tr><td><b>Wrong data</b></td><td>Tries bad values (wrong email, short mobile, wrong PAN…), then restores the form</td><td>Find missing error messages</td></tr>
+    <tr><td><b>Edge cases</b></td><td>Too short, too long, minimum and maximum values, then restores the form</td><td>Check length and number limits</td></tr>
+    <tr><td><b>Full QA run</b></td><td>Valid + Wrong + Edge cases in one go, then offers an HTML report to download</td><td>One complete check with a report</td></tr>
+  </tbody>
+</table>
+
+<h3>Reading Wrong data / Edge case results</h3>
+<table>
+  <tbody>
+    <tr><td style="width:27%"><span class="pill ok">Passed</span></td><td>The form refused the bad value. Good.</td></tr>
+    <tr><td><span class="pill bad">Failed</span></td><td>The form accepted something it should refuse (or refused a correct value). <b>Raise a bug.</b></td></tr>
+    <tr><td><span class="pill warn">No error shown yet</span></td><td>The form may only check on Save. Run again with <b>Click Save / Submit after each wrong value</b> on.</td></tr>
+    <tr><td><span class="pill info">Check manually</span></td><td>Some forms allow it (e.g. +91 in a mobile). You decide.</td></tr>
+  </tbody>
+</table>
+
+<h3>Upload fields</h3>
+<p>Test tab → <span class="ui">Upload fields</span> → <span class="ui">Add file</span>: add a few small <b>dummy</b> files (PDF, JPG, PNG), then use <span class="ui">Categories</span> to mark each one (Photo, ID proof, Address proof…). QA Kit then puts the right file in each upload box. Files stay in your browser.</p>
+
+<!-- ============ PAGE 3 ============ -->
+<h2 class="page-break" style="margin-top:0"><span class="n">5</span>Other tools</h2>
+<table>
+  <tbody>
+    <tr><td style="width:27%"><b>Security scan</b></td><td>Test tab. Quick, safe check for common issues (http forms, risky scripts, exposed tokens, trackers). Score out of 100; <span class="ui">Copy report</span> for the bug ticket.</td></tr>
+    <tr><td><b>Test cases</b></td><td>Output → <span class="ui">Generate test cases</span>. Export as CSV, Markdown, HTML, PDF or Playwright code.</td></tr>
+    <tr><td><b>Record errors</b><span class="cr">Chrome/Edge</span></td><td>Setup → <span class="ui">Capture activity during fill</span>. Counts console errors and failed requests (404, 500) while you test.</td></tr>
+    <tr><td><b>Evidence screenshot</b><span class="cr">Chrome/Edge</span></td><td>Output → Reports → <span class="ui">Capture page evidence</span>. Full-page picture plus recorded errors, ready for a bug.</td></tr>
+    <tr><td><b>Network</b><span class="cr">Chrome/Edge</span></td><td>Setup → Network → choose 3G, Slow 2G or Offline → <span class="ui">Apply</span>. Check loading signs, double Submit and error messages. <span class="ui">Restore normal</span> when done.</td></tr>
+    <tr><td><b>Viewport</b><span class="cr">Chrome/Edge</span></td><td>Setup → Viewport → pick a phone, tablet or laptop. <span class="ui">Preview</span> shows a picture and flags sideways scrolling; <span class="ui">Apply to current page</span> lets you use the page at that size. <span class="ui">Restore viewport</span> when done.</td></tr>
+  </tbody>
+</table>
+<p class="small muted">Network, Viewport and the evidence screenshot make Chrome show “QA Kit started debugging this browser”. That is normal; it goes away when you restore.</p>
+
+<div class="grid2" style="margin-top:6pt">
+  <div class="box">
+    <h3>Shortcuts</h3>
+    <table style="margin:0"><tbody>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Y</kbd></td><td>Open QA Kit</td></tr>
+      <tr><td><kbd>Alt</kbd>+<kbd>S</kbd> / <kbd>Alt</kbd>+<kbd>F</kbd></td><td>Scan / Fill</td></tr>
+      <tr><td><kbd>Alt</kbd>+<kbd>T</kbd> / <kbd>Alt</kbd>+<kbd>B</kbd></td><td>Page top / bottom</td></tr>
+      <tr><td><kbd>Alt</kbd>+<kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>Test / Output / Setup</td></tr>
+      <tr><td><kbd>?</kbd> / <kbd>Esc</kbd></td><td>Help / close</td></tr>
+    </tbody></table>
+  </div>
+  <div class="box">
+    <h3>Works on / doesn’t</h3>
+    <p style="margin-bottom:3pt"><b style="color:var(--ok)">Works:</b> normal sites and web apps (React, Angular, Vue), most custom dropdowns, date pickers and upload boxes, same-site frames.</p>
+    <p style="margin:0"><b style="color:var(--bad)">Doesn’t:</b> browser pages (<code>chrome://</code>, Web Store), frames from another website, canvas-drawn forms, CAPTCHAs.</p>
+  </div>
+</div>
+
+<h2><span class="n">6</span>If something goes wrong</h2>
+<table>
+  <tbody>
+    <tr><td style="width:34%">“Can’t read this page”</td><td>Reload the tab and try again.</td></tr>
+    <tr><td>A field was skipped</td><td>Probably a custom widget. Fill it by hand; the reason is in <b>Output → Activity log</b>.</td></tr>
+    <tr><td>An upload box stayed empty</td><td>Add a file in a format the box accepts (see its “PDF, JPG…” hint).</td></tr>
+    <tr><td>Files and settings disappeared</td><td>You loaded QA Kit from a new folder. Remove it and use the original folder.</td></tr>
+    <tr><td>No Developer mode / Load unpacked</td><td>Your company manages the browser. Ask IT.</td></tr>
+  </tbody>
+</table>
+<p><b>Report a problem to the owner</b> with: the page address, what you expected, and the text from <b>Output → Activity log → View logs</b>.</p>
+
+<div class="rules">
+  <h3>Team rules</h3>
+  <ul>
+    <li><b>Test, dev or staging sites only.</b> Never production or real customer data.</li>
+    <li>Use dummy accounts and dummy files only. Results are a strong hint, not a guarantee: always check anything marked Failed.</li>
+    <li>On a shared computer, clear QA Kit data when you finish (Setup → Danger zone).</li>
+  </ul>
+</div>
+
+</body>
+</html>
