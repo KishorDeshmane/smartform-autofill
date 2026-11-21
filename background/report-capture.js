@@ -1,7 +1,6 @@
 
 (function (root) {
   const CDP_VERSION = '1.3';
-  const LOG_REPLAY_WAIT_MS = 600;
   const MAX_LOG_LINES = 60;
   const MAX_ERROR_ENTRIES = 30;
   const MAX_BUFFERED_LINES = 400;
@@ -137,10 +136,42 @@
   function persistSessions() {
     const area = sessionArea();
     if (!area) return Promise.resolve();
-    const records = [...sessions].filter(([, s]) => s.attached).map(([tabId, s]) => ({
+    const records = [...sessions].filter(([, s]) => s.attached || s.captureActive).map(([tabId, s]) => ({
       tabId, viewportOverride: s.viewportOverride || null, networkProfile: s.networkProfile || null, captureActive: !!s.captureActive
     }));
     return area.set({ [SESSIONS_KEY]: records }).catch(() => {});
+  }
+
+  // Recording no longer keeps the worker alive (no debugger), so MV3 may stop it between events.
+  // Keep each tab's recorded activity in storage.session too, so a restarted worker still has it.
+  const ACTIVITY_KEY_PREFIX = 'sffaActivity:';
+  const activitySaveTimers = new Map();
+
+  /** Saves a tab's recorded activity shortly after it changes (one write per second at most). */
+  function persistActivitySoon(tabId) {
+    const area = sessionArea();
+    if (!area || activitySaveTimers.has(tabId)) return;
+    activitySaveTimers.set(tabId, setTimeout(() => {
+      activitySaveTimers.delete(tabId);
+      const s = sessions.get(tabId);
+      if (!s) return;
+      area.set({ [ACTIVITY_KEY_PREFIX + tabId]: {
+        consoleLines: s.consoleLines, networkLines: s.networkLines, flaggedErrors: s.flaggedErrors,
+        flaggedErrorKeys: [...s.flaggedErrorKeys], counts: s.counts
+      } }).catch(() => {});
+    }, 1000));
+  }
+
+  /** Puts saved activity back into a restored session. */
+  async function restoreActivity(area, tabId, session) {
+    const key = ACTIVITY_KEY_PREFIX + tabId;
+    const saved = (await area.get(key))?.[key];
+    if (!saved || typeof saved !== 'object') return;
+    if (Array.isArray(saved.consoleLines)) session.consoleLines = saved.consoleLines.slice(-MAX_BUFFERED_LINES);
+    if (Array.isArray(saved.networkLines)) session.networkLines = saved.networkLines.slice(-MAX_BUFFERED_LINES);
+    if (Array.isArray(saved.flaggedErrors)) session.flaggedErrors = saved.flaggedErrors.slice(-MAX_BUFFERED_LINES);
+    if (Array.isArray(saved.flaggedErrorKeys)) session.flaggedErrorKeys = new Set(saved.flaggedErrorKeys);
+    if (saved.counts && typeof saved.counts === 'object') session.counts = { ...session.counts, ...saved.counts };
   }
 
   /** Rebuilds session records for tabs that Chrome still reports as debugger-attached. */
@@ -153,13 +184,15 @@
       const attachedTabIds = await new Promise(resolve => chrome.debugger.getTargets(targets =>
         resolve(new Set(targets.filter(t => t.attached && Number.isInteger(t.tabId)).map(t => t.tabId)))));
       for (const record of records) {
-        if (!attachedTabIds.has(record.tabId) || sessions.get(record.tabId)?.attached) continue;
+        const attached = attachedTabIds.has(record.tabId);
+        if ((!attached && !record.captureActive) || sessions.get(record.tabId)?.attached) continue;
         const session = getOrCreateSession(record.tabId);
-        session.attached = true;
-        session.viewportOverride = record.viewportOverride;
-        session.networkProfile = record.networkProfile || null;
+        session.attached = attached;
+        session.viewportOverride = attached ? record.viewportOverride : null;
+        session.networkProfile = attached ? record.networkProfile || null : null;
         session.captureActive = !!record.captureActive;
         session.restored = true;
+        await restoreActivity(area, record.tabId, session).catch(() => {});
       }
       bindDebuggerListeners();
       await persistSessions();
@@ -197,15 +230,17 @@
     return 'net-2xx';
   }
 
-  /** Stops session recording and detaches the debugger when it is attached. */
-  async function stopCaptureSession(tabId) {
+  /**
+   * Resets network/viewport emulation and detaches the debugger, so Chrome's "debugging" bar goes
+   * away. Recording is not affected: it no longer uses the debugger.
+   */
+  async function releaseDebugger(tabId) {
     await whenSessionsRestored();
     const session = sessions.get(tabId);
     if (!session || !session.attached) {
       // No record, but Chrome may still hold this extension's attachment (e.g. after a restart).
       // Detaching also clears any network/viewport emulation that attachment applied.
-      const detached = await cdpDetach(tabId);
-      return { ok: true, wasAttached: detached };
+      return cdpDetach(tabId);
     }
     try {
       await cdpSend(tabId, 'Network.emulateNetworkConditions', {
@@ -219,25 +254,68 @@
     }
     session.attached = false;
     session.networkProfile = null;
-    session.captureActive = false;
     await cdpDetach(tabId);
     await persistSessions();
-    return { ok: true, wasAttached: true };
+    return true;
   }
 
-  /** Restores normal network settings and detaches every active tab session. */
+  /** Detaches when nothing the user turned on (network profile, device size) still needs the debugger. */
+  async function releaseDebuggerIfUnused(tabId) {
+    const session = sessions.get(tabId);
+    if (session?.attached && !holdsEmulation(session)) await releaseDebugger(tabId);
+  }
+
+  /** Runs one of the recorder functions in the tab's top frame. */
+  async function runInPage(tabId, func, args = [], world = 'ISOLATED') {
+    const [result] = await chrome.scripting.executeScript({ target: { tabId }, world, func, args });
+    return result?.result;
+  }
+
+  /** Records events the page recorder has collected but not sent yet. */
+  async function pullPageActivity(tabId) {
+    const session = sessions.get(tabId);
+    if (!session?.captureActive) return;
+    try { recordPageActivity(tabId, await runInPage(tabId, root.SFFAActivityRecorder.takeActivityBatch)); }
+    catch (_) { /* Page gone or no access: keep what was already received. */ }
+  }
+
+  /** Stops recording and everything else QA Kit runs in the tab (network profile, device size). */
+  async function stopCaptureSession(tabId) {
+    await whenSessionsRestored();
+    const session = sessions.get(tabId);
+    const wasRecording = !!session?.captureActive;
+    if (wasRecording) {
+      // Keep the events the relay has not sent yet: once recording is off, late batches are ignored.
+      await pullPageActivity(tabId);
+      try {
+        await runInPage(tabId, root.SFFAActivityRecorder.setActivityRelay, [null, false]);
+        await runInPage(tabId, root.SFFAActivityRecorder.pauseActivityHook, [], 'MAIN');
+      } catch (_) { /* Page gone: its recorder went with it. */ }
+      session.captureActive = false;
+    }
+    const detached = await releaseDebugger(tabId);
+    await persistSessions();
+    return { ok: true, wasAttached: detached || wasRecording };
+  }
+
+  /**
+   * Restores normal network settings and detaches the debugger from every tab (e.g. when the worker
+   * is suspended). Recording keeps running: it lives in the page and resumes with the next worker.
+   */
   async function detachAllSessions() {
-    await Promise.all([...sessions.keys()].map(tabId => stopCaptureSession(tabId).catch(() => {})));
+    await Promise.all([...sessions.keys()].map(tabId => releaseDebugger(tabId).catch(() => {})));
   }
 
-  /** Reports whether the tab's capture session is currently debugger-attached. */
+  /** Reports whether QA Kit is recording in the tab or holds its debugger (network profile, device size). */
   function isSessionAttached(tabId) {
     const session = sessions.get(tabId);
-    return !!(session && session.attached);
+    return !!(session && (session.captureActive || session.attached));
   }
 
   /** Returns bounded capture counts and entries for a tab, or an empty summary. */
-  function getSessionSummary(tabId) {
+  async function getSessionSummary(tabId) {
+    await whenSessionsRestored();
+    await pullPageActivity(tabId);
     const session = sessions.get(tabId);
     if (!session) return { consoleErrors: 0, failedRequests: 0 };
     return {
@@ -246,20 +324,48 @@
     };
   }
 
-  /** Records supported DevTools console and network events in the matching tab session. */
-  function handleDebuggerEvent(source, method, params) {
-    const session = sessions.get(source.tabId);
-    if (!session || !session.attached) return;
+  const PAGE_EVENT_METHODS = new Set(['Runtime.consoleAPICalled', 'Runtime.exceptionThrown', 'Network.requestWillBeSent', 'Network.responseReceived', 'Network.loadingFailed']);
+  const short = (value, max) => String(value == null ? '' : value).slice(0, max);
 
-    if (method === 'Log.entryAdded') {
-      const e = params.entry;
-      const text = sanitizeText(e.text);
-      const line = `[${formatWallClock()}] ${e.level.toUpperCase()}: ${text}`;
-      pushCapped(session.consoleLines, line);
-      if (e.level === 'error') {
-        addFlaggedError(session, { raw: line, kind: 'console', text });
+  /**
+   * Records a batch from the page recorder. The page is untrusted, so every field is bounded and
+   * reshaped before it reaches recordEvent.
+   */
+  function recordPageActivity(tabId, events) {
+    const session = sessions.get(tabId);
+    if (!session?.captureActive || !Array.isArray(events)) return;
+    for (const event of events.slice(0, 200)) {
+      const p = event?.params;
+      if (!PAGE_EVENT_METHODS.has(event?.method) || !p || typeof p !== 'object') continue;
+      const requestId = short(p.requestId, 40);
+      const durationMs = Number.isFinite(p.durationMs) ? Math.max(0, Math.round(p.durationMs)) : undefined;
+      let params;
+      switch (event.method) {
+        case 'Runtime.consoleAPICalled':
+          params = { type: short(p.type, 10).replace(/[^a-z]/gi, '') || 'log', args: (Array.isArray(p.args) ? p.args : []).slice(0, 8).map(a => ({ value: short(a?.value, 500) })) };
+          break;
+        case 'Runtime.exceptionThrown': {
+          const d = p.exceptionDetails || {};
+          params = { exceptionDetails: { text: short(d.text, 300), exception: { description: short(d.exception?.description, 800) }, url: short(d.url, 500), lineNumber: Number(d.lineNumber) || 0 } };
+          break;
+        }
+        case 'Network.requestWillBeSent':
+          params = { requestId, request: { method: short(p.request?.method, 10).replace(/[^a-z]/gi, '') || 'GET', url: short(p.request?.url, 2000) } };
+          break;
+        case 'Network.responseReceived':
+          params = { requestId, durationMs, response: { status: Math.max(0, Math.min(999, Number(p.response?.status) || 0)), url: short(p.response?.url, 2000) } };
+          break;
+        default:
+          params = { requestId, errorText: short(p.errorText, 100), type: short(p.type, 20) };
       }
-    } else if (method === 'Runtime.consoleAPICalled') {
+      recordEvent(session, event.method, params);
+    }
+    persistActivitySoon(tabId);
+  }
+
+  /** Records one console or network event (DevTools event shape) in a tab session. */
+  function recordEvent(session, method, params) {
+    if (method === 'Runtime.consoleAPICalled') {
       const text = sanitizeText((params.args || []).map(describeConsoleArg).join(' '));
       const line = `[${formatWallClock()}] ${params.type.toUpperCase()}: ${text}`;
       pushCapped(session.consoleLines, line);
@@ -287,7 +393,7 @@
       const url = sanitizeUrl(params.response.url);
       const pending = session.pendingRequests.get(params.requestId);
       const method_ = pending?.method || params.response.requestMethod || '';
-      const duration = pending ? Date.now() - pending.startedAt : null;
+      const duration = Number.isFinite(params.durationMs) ? params.durationMs : pending ? Date.now() - pending.startedAt : null;
       const durationText = duration !== null ? ` (~${duration}ms)` : '';
       const line = `[${formatWallClock()}] \u2190 ${status} ${method_} ${url}${durationText}`;
       const kind = statusKind(status);
@@ -321,11 +427,11 @@
   function bindDebuggerListeners() {
     const api = root.SFFAExt?.debugger;
     if (debuggerListenersBound) return true;
-    if (!api?.onEvent || !api?.onDetach) return false;
-    api.onEvent.addListener(handleDebuggerEvent);
+    if (!api?.onDetach) return false;
     api.onDetach.addListener((source) => {
       const session = sessions.get(source.tabId);
-      if (session) { session.attached = false; session.viewportOverride = null; }
+      if (session) { session.attached = false; session.viewportOverride = null; session.networkProfile = null; }
+      persistSessions();
     });
     debuggerListenersBound = true;
     return true;
@@ -337,6 +443,7 @@
   if (root.SFFAExt.tabs && root.SFFAExt.tabs.onRemoved) {
     root.SFFAExt.tabs.onRemoved.addListener((tabId) => {
       sessions.delete(tabId);
+      sessionArea()?.remove(ACTIVITY_KEY_PREFIX + tabId).catch(() => {});
     });
   }
 
@@ -359,15 +466,19 @@
   }
 
   if (root.SFFAExt.tabs?.onUpdated) {
-    root.SFFAExt.tabs.onUpdated.addListener((tabId, changeInfo) => {
+    root.SFFAExt.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
+      if (changeInfo.status !== 'loading' && changeInfo.status !== 'complete') return;
+      // After a worker restart the sessions are not in memory yet: restore them first, or a
+      // navigation would leave a saved recording marked as running on the new page.
+      await whenSessionsRestored();
       const session = sessions.get(tabId);
-      if (!session?.attached) return;
+      if (!session || (!session.attached && !session.captureActive)) return;
       if (changeInfo.status === 'loading') {
         // A viewport size or network profile stays until the user restores it, across reloads and
-        // navigation in this tab. A plain capture session still ends when the page changes.
-        if (!holdsEmulation(session)) stopCaptureSession(tabId).catch(() => {});
-        else session.captureActive = false;
-      } else if (changeInfo.status === 'complete' && holdsEmulation(session)) {
+        // navigation in this tab. Recording ends when the page changes (its recorder goes with it).
+        if (session.captureActive) { session.captureActive = false; persistSessions(); }
+        releaseDebuggerIfUnused(tabId).catch(() => {});
+      } else if (changeInfo.status === 'complete' && session.attached && holdsEmulation(session)) {
         reapplyEmulation(tabId).catch(() => {});
       }
     });
@@ -385,8 +496,6 @@
         session.attached = true;
         await cdpSend(tabId, 'Page.enable');
         await cdpSend(tabId, 'Network.enable');
-        await cdpSend(tabId, 'Log.enable');
-        await cdpSend(tabId, 'Runtime.enable');
         await persistSessions();
         return { session, freshlyAttached: true };
       } catch (error) {
@@ -457,21 +566,38 @@
     await clearDeviceEmulation(tabId);
     session.viewportOverride = null;
     // Nothing else uses the debugger: detach so Chrome's "debugging this browser" bar goes away.
-    if (!session.networkProfile && !session.captureActive) await stopCaptureSession(tabId);
+    if (!session.networkProfile) await releaseDebugger(tabId);
     else await persistSessions();
     return { ok: true, restored: true };
   }
 
-  /** Creates or resets a tab capture session and begins collecting debugger events. */
+  /**
+   * Starts recording console and network activity with QA Kit's page recorder (no debugger, so
+   * Chrome shows no "debugging" bar). A new recording starts with an empty log.
+   */
   async function startCaptureSession(tabId) {
     try {
-      const { session, freshlyAttached } = await ensureAttached(tabId);
+      if (!Number.isInteger(tabId) || tabId < 0) throw new Error('A valid browser tab is required.');
+      await whenSessionsRestored();
+      const recorder = root.SFFAActivityRecorder;
+      const eventName = `qakit-activity-${globalThis.crypto.randomUUID()}`;
+      await runInPage(tabId, recorder.installActivityHook, [eventName], 'MAIN');
+      await runInPage(tabId, recorder.setActivityRelay, [eventName, true]);
+      const session = getOrCreateSession(tabId);
+      if (!session.captureActive) {
+        const fresh = newSession();
+        for (const key of ['consoleLines', 'networkLines', 'flaggedErrors', 'flaggedErrorKeys', 'pendingRequests', 'counts']) session[key] = fresh[key];
+        persistActivitySoon(tabId);
+      }
       session.captureActive = true;
       await persistSessions();
-      if (freshlyAttached) await sleep(LOG_REPLAY_WAIT_MS);
       return { ok: true };
     } catch (e) {
-      return { ok: false, error: e.message };
+      if (/chrome:\/\/|chrome-extension:|extensions gallery|cannot be scripted|edge:\/\/|about:/i.test(e.message)) {
+        return { ok: false, error: 'QA Kit cannot record on browser pages (chrome://, the Web Store, other extensions). Open a website and try again.' };
+      }
+      const noAccess = /cannot access|permission|host/i.test(e.message);
+      return { ok: false, error: noAccess ? 'QA Kit needs access to this page to record. Click Allow access, then try again.' : e.message };
     }
   }
 
@@ -508,7 +634,7 @@
       packetReordering: false
     });
     session.networkProfile = profile === 'normal' ? null : profile;
-    if (!session.networkProfile && !session.viewportOverride && !session.captureActive) await stopCaptureSession(tabId);
+    if (!session.networkProfile && !session.viewportOverride) await releaseDebugger(tabId);
     else await persistSessions();
     return { ok: true, profile };
   }
@@ -565,6 +691,7 @@
       }
       catch (error) { restoreError = error.message; }
     }
+    await releaseDebuggerIfUnused(tabId).catch(() => {});
     return { ok: true, restoredViewport: !restoreError, restoreError, preview };
   }
 
@@ -698,10 +825,13 @@
   /** Captures page imagery and session activity, then returns report data or an error. */
   /** `download: false` returns the image (imageDataUrl, filename) instead of saving it, so the user chooses later. */
   async function captureFullPageReport(tabId, { download = true } = {}) {
-    const { session, freshlyAttached } = await ensureAttached(tabId);
-    if (freshlyAttached) await sleep(LOG_REPLAY_WAIT_MS);
+    await pullPageActivity(tabId);
+    const { session } = await ensureAttached(tabId);
 
     const notes = [];
+    if (!session.captureActive && !session.consoleLines.length && !session.networkLines.length) {
+      notes.push('Recording was off, so console and network activity is not included. Turn on "Capture activity during fill" and fill the form before capturing to include it.');
+    }
 
     try {
       await triggerLazyContent(tabId);
@@ -753,6 +883,9 @@
       };
     } catch (e) {
       return { ok: false, error: e.message };
+    } finally {
+      // The screenshot needed the debugger only for a moment: let Chrome's "debugging" bar go away.
+      await releaseDebuggerIfUnused(tabId).catch(() => {});
     }
   }
 
@@ -921,6 +1054,6 @@
     /** Live check: true once the optional debugger permission has been granted. */
     whenSessionsRestored,
     get isDebuggerApiAvailable() { return !!root.SFFAExt?.debugger?.sendCommand; },
-    sanitizeUrl, sanitizeText, detachAllSessions
+    sanitizeUrl, sanitizeText, detachAllSessions, recordPageActivity
   };
 })(typeof window !== 'undefined' ? window : self);

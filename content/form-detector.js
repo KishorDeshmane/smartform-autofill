@@ -458,19 +458,26 @@
     // Page order (top to bottom), so documents are uploaded in the order the tester sees them.
     triggers.sort((a, b) => (a.compareDocumentPosition(b) & 4 ? -1 : 1));
     const sharedInputs = new Set();
+    const HEADING = 'h1, h2, h3, h4, h5, h6, legend, [role="heading"]';
     for (const trigger of triggers) {
-      // The trigger's card: the largest ancestor that holds no other trigger.
+      const canGrow = node => node && node !== document.body && !triggers.some(other => other !== trigger && node.contains(other));
+      // The card has its own input when one sits close to its button (within 3 levels): handled above.
+      let near = trigger;
+      for (let depth = 0; depth < 3 && canGrow(near.parentElement); depth++) near = near.parentElement;
+      if (usable.some(input => near.contains(input))) continue;
+      // The trigger's card: grow until it has a heading, never into another card or a file input
+      // outside it. (Growing to "the largest ancestor with no other trigger" swallowed the whole list,
+      // shared input included, once only one card was left — that card was then skipped.)
       let card = trigger;
-      while (card.parentElement && card.parentElement !== document.body
-        && !triggers.some(other => other !== trigger && card.parentElement.contains(other))) card = card.parentElement;
-      if (usable.some(input => card.contains(input))) continue; // the card has its own input: handled above
+      while (!card.querySelector(HEADING) && canGrow(card.parentElement)
+        && !allFileInputEls.some(input => !card.contains(input) && card.parentElement.contains(input))) card = card.parentElement;
       // The shared input: the nearest file input found while walking up from the card.
       let input = null;
       for (let node = card.parentElement; node && !input; node = node.parentElement) {
         input = usable.find(candidate => node.contains(candidate)) || null;
       }
       if (!input) continue;
-      const heading = card.querySelector('h1, h2, h3, h4, h5, h6, legend, [role="heading"]');
+      const heading = card.querySelector(HEADING);
       const label = (heading ? controlText(heading) : '').slice(0, 80);
       const clone = card.cloneNode(true);
       clone.querySelectorAll('input, select, textarea, script, style, button').forEach(n => n.remove());

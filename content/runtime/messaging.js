@@ -14,7 +14,9 @@
    */
   function scrollPage(to) {
     const down = to === 'bottom';
-    const behavior = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    // Instant when motion is reduced, or when the tab is hidden: Chrome pauses smooth scrolling in
+    // background tabs, so it would only finish once the tab is shown again.
+    const behavior = document.hidden || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
     const canMove = el => down ? el.scrollTop < el.scrollHeight - el.clientHeight - 1 : el.scrollTop > 0;
     const scroller = document.scrollingElement || document.documentElement;
     let moved = 0;

@@ -143,6 +143,8 @@ Let the extension press the page's Submit, Save or Next button.
 
 Choose a **Network profile** (Normal, 4G, 3G, 2G, Slow 2G, Offline), click **Apply**. It stays on, also after reloads, until **Restore normal**.
 
+Recording does not use Chrome's debugger, so Chrome shows no "debugging" bar for it. Chrome shows its "QA Kit started debugging this browser" bar only while a network profile or a device size is on, and briefly while the evidence screenshot is taken. Restore normal / Restore viewport removes it.
+
 ### 5.4 Viewport — screen sizes (Chrome/Edge only)
 
 1. Choose a **Device preset** (phones, tablets, laptops, CSS breakpoints) or type **Width** and **Height**.

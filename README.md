@@ -86,7 +86,7 @@ Test cases are generated from detected page structure and are suggestions for us
 
 Test case formats are CSV, Markdown, printable HTML, Playwright JavaScript, Playwright TypeScript, and Playwright Python. The print action opens the browser print dialog for PDF output. JavaScript/TypeScript output receives a parse-only syntax check; Python syntax is not parsed in the browser. A **Full QA run** shows a **Download the Full QA report** card (HTML, JSON, optional page screenshot); the card comes back if you reopen the extension on the same page. **Capture page evidence (PNG)** saves a screenshot with diagnostic summaries; if full-page capture is unavailable, it may fall back to the visible viewport. Viewport preview is shown in the extension and is not downloaded. Chromium can also apply an emulated viewport to the selected tab so you can interact with the page at that responsive size; choose **Restore viewport** when finished. This changes the page's emulated viewport, not the outer browser window size.
 
-The **Capture activity during fill** setting is off by default. When enabled, capture starts around a fill/QA operation and activity may be included in a later evidence capture. The separate **Capture page evidence (PNG)** action also captures activity for its report. Chrome may show its debugger notice while capture or network emulation is active. Capture detaches and network conditions reset when the tab begins navigating; **Stop Capturing** also resets network conditions. Network presets are approximate latency/bandwidth profiles, not real mobile networks.
+The **Capture activity during fill** setting is off by default. When enabled, capture starts around a fill/QA operation and activity may be included in a later evidence capture. The separate **Capture page evidence (PNG)** action includes the activity recorded so far; activity from before recording started is not included. Activity is recorded by QA Kit's own page script (console messages, uncaught errors, fetch/XHR requests, and page files with a known status), not by the debugger, so Chrome shows no "debugging" bar for it. It needs access to the page. Chrome shows its debugger notice only while network or viewport emulation is active, and briefly during the evidence screenshot. Capture detaches and network conditions reset when the tab begins navigating; **Stop Capturing** also resets network conditions. Network presets are approximate latency/bandwidth profiles, not real mobile networks.
 
 ## Browser differences
 
@@ -107,7 +107,7 @@ Both manifests request optional access to HTTPS sites and localhost. Browser res
 - `scripting`: inject the extension's page-scanning and form tools into the active tab.
 - `downloads`: save reports, exports, and captured images.
 - `sidePanel` (Chromium only): provide the side-panel interface.
-- `debugger` (Chromium only): Viewport, Network profiles, page-evidence screenshots and activity capture. Chrome does not allow this permission to be requested later, so it is granted at install. It is used only when you start one of those tools; Chrome then shows its "started debugging this browser" bar until you restore or stop.
+- `debugger` (Chromium only): Viewport, Network profiles and page-evidence screenshots (activity recording does not use it). Chrome does not allow this permission to be requested later, so it is granted at install. It is used only when you start one of those tools; Chrome then shows its "started debugging this browser" bar until you restore or stop.
 
 ### Optional (requested when needed)
 

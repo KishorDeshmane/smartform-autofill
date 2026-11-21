@@ -332,6 +332,7 @@ async function launch({ hostAccess = true, extraPermissions = [] } = {}) {
     const url = new URL(route.request().url());
     if (route.request().resourceType() === 'document' && PAGES[url.pathname]) return route.fulfill({ contentType: 'text/html', body: PAGES[url.pathname] });
     if (route.request().headers().referer?.includes('/slow-links')) return undefined; // never answer
+    if (url.pathname.startsWith('/missing')) return route.fulfill({ status: 404, body: 'missing' });
     return route.fulfill({ status: 200, body: 'ok' });
   });
   let [worker] = context.serviceWorkers();
@@ -580,6 +581,9 @@ test('scroll buttons: ↑/↓ scroll the page and its inner panel to the top/bot
   const env = await launch();
   try {
     const { site, popup } = await env.open('/scroll');
+    // The test page is a background tab, where Chrome never runs smooth-scroll animations: ask for
+    // reduced motion so QA Kit scrolls instantly (real users see the page, so smooth scrolling works).
+    await site.emulateMedia({ reducedMotion: 'reduce' });
     const positions = () => site.evaluate(() => [Math.round(window.scrollY), document.getElementById('panel').scrollTop, document.getElementById('list').scrollTop]);
     await site.evaluate(() => { window.scrollTo(0, 2500); document.getElementById('panel').scrollTop = 900; document.getElementById('list').scrollTop = 300; });
     await popup.click('#scrollTopBtn');
@@ -671,6 +675,38 @@ test('network profile can be reset after a service-worker restart', async () => 
     const stop = await popup.evaluate(id => window.sendRuntimeMessage({ type: 'SFFA_STOP_CAPTURE', tabId: id }), tabId);
     assert.equal(stop.ok, true);
     assert.equal(await extensionStillAttached(popup, tabId), false, 'no debugger left attached');
+  } finally { await env.close(); }
+});
+
+test('Recording works without the debugger (no Chrome bar): console errors and failed requests are counted', async () => {
+  const env = await launch({ extraPermissions: ['debugger', 'tabs'] });
+  try {
+    const { site, popup } = await env.open('/modal');
+    const tabId = await popup.evaluate(() => window.getActiveTab().then(t => t.id));
+    const start = await popup.evaluate(id => window.sendRuntimeMessage({ type: 'SFFA_START_CAPTURE', tabId: id }), tabId);
+    assert.equal(start.ok, true, `start failed: ${start.error}`);
+    assert.equal(await extensionStillAttached(popup, tabId), false, 'Recording must not attach the debugger');
+    await site.evaluate(async () => {
+      console.error('Save failed: test error');
+      await fetch('/missing/api').catch(() => {});
+      await new Promise(resolve => { const x = new window.XMLHttpRequest(); x.open('POST', '/missing/xhr'); x.onloadend = resolve; x.send('a=1'); });
+      await fetch('/ok/api');
+    });
+    const counts = await popup.evaluate(id => window.sendRuntimeMessage({ type: 'SFFA_CAPTURE_COUNTS', tabId: id }), tabId);
+    assert.equal(counts.consoleErrors, 1, 'one console error');
+    assert.equal(counts.failedRequests, 2, 'fetch 404 and XHR 404');
+    assert.equal((await popup.evaluate(id => window.sendRuntimeMessage({ type: 'SFFA_IS_CAPTURING', tabId: id }), tabId)).attached, true);
+    // The evidence screenshot needs the debugger only for a moment, then lets go (Chrome's bar goes away).
+    const report = await popup.evaluate(id => window.sendRuntimeMessage({ type: 'SFFA_CAPTURE_REPORT', tabId: id, download: false }), tabId);
+    assert.equal(report.ok, true, `report failed: ${report.error}`);
+    assert.ok(report.errorCount >= 3 && /^data:image\/png/.test(report.imageDataUrl), 'report has the recorded errors and an image');
+    assert.equal(await extensionStillAttached(popup, tabId), false, 'debugger released after the screenshot');
+    assert.equal((await popup.evaluate(id => window.sendRuntimeMessage({ type: 'SFFA_STOP_CAPTURE', tabId: id }), tabId)).ok, true);
+    assert.equal((await popup.evaluate(id => window.sendRuntimeMessage({ type: 'SFFA_IS_CAPTURING', tabId: id }), tabId)).attached, false);
+    // After Stop, new errors are not recorded.
+    await site.evaluate(() => console.error('after stop'));
+    assert.equal((await popup.evaluate(id => window.sendRuntimeMessage({ type: 'SFFA_CAPTURE_COUNTS', tabId: id }), tabId)).consoleErrors, 1);
+    assert.equal(await site.locator('qa-kit-indicator').count(), 0, 'no on-page pill');
   } finally { await env.close(); }
 });
 
@@ -1018,6 +1054,7 @@ test('file uploads: cards with only a "Browse Files" button get their own mapped
     await popup.click('#fillFormBtn');
     await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 60000 });
     const uploads = await site.evaluate(() => window.uploads);
+    if (process.env.QAKIT_DEBUG) console.log(`LOG:\n${await popup.evaluate(() => [...document.querySelectorAll('#logList li')].map(li => li.textContent.trim()).join('\n'))}`);
     assert.deepEqual(uploads.map(u => `${u.doc}:${u.name}`).sort(), ['fin:financials.pdf', 'moa:moa.pdf'], `status: ${await popup.textContent('#fillStatus')}`);
     assert.deepEqual(await site.evaluate(() => window.replaced), [], 'an already uploaded document is never replaced');
     assert.equal(await site.locator('#pending .card').count(), 0, 'both pending cards moved to Uploaded');

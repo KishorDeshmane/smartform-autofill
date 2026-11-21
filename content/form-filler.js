@@ -1174,7 +1174,12 @@
       let attachResult = null;
       const pageReaction = observeUploadPageReaction(element, fileRecords.map(record => record.name));
       const outcome = root.SFFAFileUploader.assignFilesToInput(element, fileRecords);
-      if (outcome.success) options.touchedFileInputs?.add(element);
+      // A card filled through its own button shares one hidden input with other cards: remember the
+      // button (so the next card still gets its file) and the input (so it is never filled on its own).
+      if (outcome.success) {
+        options.touchedFileInputs?.add(element);
+        if (field.viaTrigger && field.trigger) options.touchedFileInputs?.add(field.trigger);
+      }
       const uploadStatus = root.SFFAStatus ? root.SFFAStatus.classifyUploadResult(outcome) : null;
       if (!outcome.success) {
         pageReaction.cancel();
@@ -2052,6 +2057,8 @@
     // Upload inputs this fill already gave a file (or left alone): a card's shared input is not filled again
     // on its own, and "Replace" inputs are not reported on every pass.
     const fileOptions = { ...options, touchedFileInputs: new WeakSet() };
+    /** What "already filled" is remembered by: the card's button for button cards, else the input. */
+    const fileTouchKey = field => (field.viaTrigger && field.trigger ? field.trigger : field.element);
     // Setting "Keep values already in the form" (normal fills only; test runs must change values).
     const keepExisting = settings.keepExistingValues !== false && options.isolatedMode !== true;
     const kept = new Set();
@@ -2092,7 +2099,7 @@
       for (const [name, group] of Object.entries(found.checkboxGroups || {})) if (group.options?.[0]) units.push({ kind: 'checkboxGroup', el: group.options[0], group, name });
       // Uploads are filled where they are on the page, like every other field.
       for (const field of found.file || []) {
-        if (field.element && !fileOptions.touchedFileInputs.has(field.element)) units.push({ kind: 'file', el: field.element, field });
+        if (field.element && !fileOptions.touchedFileInputs.has(fileTouchKey(field))) units.push({ kind: 'file', el: field.element, field });
       }
       // Test-and-restore runs (Full QA, Wrong data / Edge cases) only touch fields they can put back.
       if (options.isolatedMode === true) {
@@ -2366,7 +2373,7 @@
     // ----- Last: uploads that appeared late, then consent / required checkboxes, then saved credentials and repeat rows.
     if (keepGoing) {
       checkCancelled();
-      const files = (scan().file || []).filter(field => field.element && !fileOptions.touchedFileInputs.has(field.element)
+      const files = (scan().file || []).filter(field => field.element && !fileOptions.touchedFileInputs.has(fileTouchKey(field))
         && !done.has(unitKey({ kind: 'file', el: field.element, field })));
       if (files.length && options.hydrateFiles && !filesHydrated) await options.hydrateFiles(storedFiles);
       if (files.length) {

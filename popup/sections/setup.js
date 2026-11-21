@@ -365,7 +365,7 @@ async function onStopCaptureClick() {
     if (tab && tab.id) {
       await sendRuntimeMessage({ type: 'SFFA_STOP_CAPTURE', tabId: tab.id });
       showToast('Capturing stopped — banner will disappear');
-      await SFFALogger.log('Debugger detached — capture session stopped', 'info');
+      await SFFALogger.log('Recording stopped and debugger released', 'info');
       await renderLogs();
     }
   } finally {

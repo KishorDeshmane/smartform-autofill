@@ -4,7 +4,7 @@ if (typeof importScripts === 'function') {
   importScripts('../utils/ext.js', '../utils/idb-storage.js', '../utils/storage.js');
   // Screenshot/capture support is optional. If it fails to load, everything else (storage,
   // messaging, filling) must keep working, so it is imported separately and guarded.
-  try { importScripts('./report-capture.js'); }
+  try { importScripts('./activity-recorder.js', './report-capture.js'); }
   catch (error) { console.error('[QA Kit] Capture module failed to load; capture features are disabled.', error); }
 }
 
@@ -65,7 +65,7 @@ const POPUP_ONLY_MESSAGES = new Set([
   'SFFA_VIEWPORT_PREVIEW', 'SFFA_APPLY_VIEWPORT', 'SFFA_RESTORE_VIEWPORT', 'SFFA_START_CAPTURE', 'SFFA_STOP_CAPTURE', 'SFFA_IS_CAPTURING',
   'SFFA_CAPTURE_COUNTS', 'SFFA_DEBUGGER_AVAILABLE'
 ]);
-const CONTENT_ONLY_MESSAGES = new Set(['SFFA_GET_FILE_CONTENTS']);
+const CONTENT_ONLY_MESSAGES = new Set(['SFFA_GET_FILE_CONTENTS', 'SFFA_ACTIVITY_EVENTS']);
 /** Storage writes a content script (running inside an untrusted page) may request. */
 const CONTENT_ALLOWED_MUTATIONS = new Set(['setLastData', 'addUsed']);
 const MAX_MUTATION_ARGS = 10;
@@ -243,6 +243,19 @@ self.SFFAExt.onMessage((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message.type === 'SFFA_ACTIVITY_EVENTS') {
+    // Console/network events from QA Kit's recorder in the page (top frame only).
+    // This message often wakes a stopped worker: restore the recording sessions before recording.
+    const capture = self.SFFAReportCapture;
+    if (sender.frameId === 0 && capture) {
+      Promise.resolve(capture.whenSessionsRestored?.())
+        .then(() => capture.recordPageActivity(sender.tab.id, message.events))
+        .catch(() => {});
+    }
+    sendResponse({ ok: true });
+    return false;
+  }
+
   if (message.type === 'SFFA_IS_CAPTURING') {
     if (!self.SFFAReportCapture) { sendResponse({ ok: true, attached: false }); return false; }
     // Wait for sessions from before a worker restart to be restored, so the status is accurate.
@@ -253,9 +266,10 @@ self.SFFAExt.onMessage((message, sender, sendResponse) => {
   }
 
   if (message.type === 'SFFA_CAPTURE_COUNTS') {
-    const counts = self.SFFAReportCapture?.getSessionSummary(message.tabId) || { consoleErrors: 0, failedRequests: 0 };
-    sendResponse({ ok: true, ...counts });
-    return false;
+    Promise.resolve(self.SFFAReportCapture?.getSessionSummary(message.tabId) || { consoleErrors: 0, failedRequests: 0 })
+      .then((counts) => sendResponse({ ok: true, ...counts }))
+      .catch(() => sendResponse({ ok: true, consoleErrors: 0, failedRequests: 0 }));
+    return true;
   }
 
   if (message.type === 'SFFA_DEBUGGER_AVAILABLE') {
