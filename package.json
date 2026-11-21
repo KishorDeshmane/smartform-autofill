@@ -11,7 +11,9 @@
     "verify:popup": "node scripts/verify-popup-ui.mjs",
     "verify:glass": "node scripts/verify-glass-popup.mjs",
     "test:e2e": "npm run build:chrome && node --test --test-concurrency=1 --test-timeout=180000 \"tests-e2e/*.mjs\"",
-    "verify:responsive": "node scripts/verify-responsive.mjs"
+    "verify:responsive": "node scripts/verify-responsive.mjs",
+    "guide:shots": "npm run build:chrome && node docs/team-guide/capture.mjs . docs/team-guide/shots",
+    "guide:pdf": "node docs/team-guide/make-pdf.mjs . docs/team-guide docs/QA-Kit-Team-Guide.pdf"
   },
   "devDependencies": {
     "axe-core": "^4.14.0",

@@ -4,6 +4,8 @@ QA Kit is a browser extension for trying synthetic data in web forms and running
 
 For step-by-step use of every button and setting, see the user guide: [FEATURES.md](FEATURES.md).
 
+**Team guide (PDF):** [docs/QA-Kit-Team-Guide.pdf](docs/QA-Kit-Team-Guide.pdf): install, setup, everyday use, team rules and the release process, with screenshots. Source: `docs/team-guide/guide.html`; rebuild with `npm run guide:shots` (new screenshots) and `npm run guide:pdf`.
+
 ## Features
 
 - The popup and Chromium side panel organize controls into **Test**, **Output**, and **Setup** sections. The fill action remains visible while each section scrolls.
