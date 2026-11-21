@@ -138,14 +138,14 @@
     <div class="who">
       <div><b>Testers</b>Install, set up and use it: parts A and B, sections 12–13, and the appendices.</div>
       <div><b>Team lead</b>Roll it out to the team: also section 11.</div>
-      <div><b>QA Kit owner</b>Publish new versions: also section 15.</div>
+      <div><b>QA Kit owner</b>Publish updates: also section 15.</div>
     </div>
     <div class="shots">
       <img src="shots/site-filled-form.png" alt="A registration form filled by QA Kit">
       <img src="shots/panel-test-tab.png" alt="The QA Kit panel">
     </div>
   </div>
-  <div class="meta"><span>Version 2.2.0 · Chrome, Edge and Firefox</span><span>Updated 22 November 2026</span></div>
+  <div class="meta"><span>Chrome, Edge and Firefox</span><span>Updated 22 November 2026</span></div>
 </div>
 
 <!-- ============ CONTENTS ============ -->
@@ -153,7 +153,7 @@
   <h2>Contents</h2>
   <div class="part">Quick start</div>
   <ol><li><span>★</span>Install and use QA Kit in 10 steps<em>one page</em></li>
-  <li><span>★</span>What’s new in this version</li></ol>
+  <li><span>★</span>What’s new</li></ol>
   <div class="part">Part A — Get started</div>
   <ol>
     <li><span>1</span>What QA Kit is, and the golden rules</li>
@@ -176,7 +176,7 @@
     <li><span>12</span>Team rules (data safety)</li>
     <li><span>13</span>Sharing one setup across the team</li>
     <li><span>14</span>Removing QA Kit</li>
-    <li><span>15</span>Releasing a new version (QA Kit owner)</li>
+    <li><span>15</span>Publishing an update (QA Kit owner)</li>
   </ol>
   <div class="part">Appendices</div>
   <ol>
@@ -220,8 +220,8 @@
 </section>
 
 <section>
-  <h2 style="margin-top:18pt"><span class="num">★</span>What’s new in this version</h2>
-  <p>If you used an earlier version (it was called SmartForm AutoFill, then QA Kits), these are the changes you will notice:</p>
+  <h2 style="margin-top:18pt"><span class="num">★</span>What’s new</h2>
+  <p>If you used QA Kit before (it was called SmartForm AutoFill, then QA Kits), these are the changes you will notice:</p>
   <ul class="new">
     <li><b>New name: QA Kit.</b> Your saved files, mappings and settings are kept.</li>
     <li><b>Recording without Chrome’s “debugging” bar.</b> Console errors and failed requests are now recorded by QA Kit itself. Chrome’s bar only appears for network profiles, screen sizes and, for a moment, the evidence screenshot.</li>
@@ -263,7 +263,7 @@
     <thead><tr><th style="width:28%">Way</th><th>What to do</th><th style="width:26%">Best for</th></tr></thead>
     <tbody>
       <tr><td><b>A. Download from GitHub</b></td><td>Open <span class="repo">https://github.com/KishorDeshmane/smartform-autofill</span> (private: ask the owner for access), click <span class="ui">Code → Download ZIP</span>, and extract the ZIP.</td><td>Most testers</td></tr>
-      <tr><td><b>B. Zip from a teammate</b></td><td>Ask for <code>qa-kit-chrome.zip</code> (or download it from the GitHub Release), and extract it.</td><td>No GitHub access</td></tr>
+      <tr><td><b>B. Zip from a teammate</b></td><td>Ask for <code>qa-kit-chrome.zip</code> (or download it from the team’s shared folder), and extract it.</td><td>No GitHub access</td></tr>
       <tr><td><b>C. Git clone</b></td><td><code>git clone https://github.com/KishorDeshmane/smartform-autofill.git "%USERPROFILE%\Documents\QA Kit"</code></td><td>Technical users (easiest to update)</td></tr>
     </tbody>
   </table>
@@ -277,7 +277,7 @@
     <span class="badge" style="left:13.6%;top:18%">2</span>
     <span class="badge" style="left:41.4%;top:48.5%">3</span>
     <span class="badge" style="left:69.4%;top:82.3%">4</span></div>
-    <figcaption>The extensions page after installing. ① Developer mode ② Load unpacked ③ QA Kit with its version number ④ Reload, used when updating.</figcaption>
+    <figcaption>The extensions page after installing. ① Developer mode ② Load unpacked ③ QA Kit ④ Reload, used when updating. (Chrome shows a number next to the name; you can ignore it.)</figcaption>
   </figure>
   <ol class="steps">
     <li>Type <code>chrome://extensions</code> (Chrome) or <code>edge://extensions</code> (Edge) in the address bar and press Enter.</li>
@@ -297,7 +297,7 @@
   <h2><span class="num">3</span>Install in Firefox</h2>
   <p>Firefox runs form scanning, filling, uploads, test cases and exports. <b>Recording, evidence screenshots, network profiles and screen sizes are Chrome/Edge only.</b></p>
   <ol class="steps">
-    <li>Get <code>qa-kit-firefox.zip</code> from a teammate or the Releases page of <span class="repo">https://github.com/KishorDeshmane/smartform-autofill</span> (or build it: <code>npm install</code>, then <code>npm run build:firefox</code>).</li>
+    <li>Get <code>qa-kit-firefox.zip</code> from a teammate or the team’s shared folder, or build it from <span class="repo">https://github.com/KishorDeshmane/smartform-autofill</span> (or build it: <code>npm install</code>, then <code>npm run build:firefox</code>).</li>
     <li>Open <code>about:debugging#/runtime/this-firefox</code>.</li>
     <li>Click <span class="ui">Load Temporary Add-on…</span> and pick the zip, or <code>manifest.json</code> inside the extracted Firefox folder.</li>
     <li>Click the QA Kit icon in the toolbar. It opens as a popup. To keep it beside the page, click <span class="ui">Open in side panel</span> in the popup, or use <b>View → Sidebar → QA Kit</b>.</li>
@@ -558,7 +558,7 @@
 </section>
 
 <!-- ============ PART C ============ -->
-<div class="part-title"><small>Part C</small><h1>Look after it</h1><p>Fixing problems, staying up to date, team rules, and releasing new versions.</p></div>
+<div class="part-title"><small>Part C</small><h1>Look after it</h1><p>Fixing problems, staying up to date, team rules, and publishing updates.</p></div>
 
 <section>
   <h2><span class="num">10</span>Problems, updating and reporting</h2>
@@ -573,21 +573,21 @@
       <tr><td>An upload box stayed empty</td><td>Add a file in <b>Upload fields</b> in a format the box accepts (see the box’s “PDF, JPG…” hint).</td></tr>
       <tr><td>Wrong data says <b>No error shown yet</b> everywhere</td><td>The form checks only on Save. Turn on <b>Click Save / Submit after each wrong value</b> (test sites only).</td></tr>
       <tr><td>A run seems slow</td><td>Pages with many uploads wait briefly after each one. Watch the progress bar; <b>Stop fill / QA run</b> stops it.</td></tr>
-      <tr><td>My files and settings disappeared after updating</td><td>You loaded the new version from a different folder. Remove that copy and update the original folder instead (below).</td></tr>
+      <tr><td>My files and settings disappeared after updating</td><td>You loaded the update from a different folder. Remove that copy and update the original folder instead (below).</td></tr>
       <tr><td>Firefox: “appears to be corrupt”</td><td>Use <code>about:debugging</code> → <b>Load Temporary Add-on…</b> (section 3).</td></tr>
       <tr><td>Can’t turn on Developer mode / no Load unpacked</td><td>Your company manages the browser. Ask IT (section 11).</td></tr>
     </tbody>
   </table>
 
-  <h3>Updating to a new version</h3>
+  <h3>Getting the latest update</h3>
+  <p>When the QA Kit owner announces an update in the team channel, update straight away, so everyone tests with the same QA Kit.</p>
   <ol class="steps">
-    <li>Compare your version in <code>chrome://extensions</code> (the number next to QA Kit) with the latest one the QA Kit owner announced.</li>
-    <li>Get the new version <b>into the same folder</b> you installed from:
+    <li>Get the update <b>into the same folder</b> you installed from:
       <ul><li>Git users: run <code>git pull</code> in that folder.</li>
       <li>ZIP users: extract the new ZIP and copy its contents <b>over</b> your existing QA Kit folder (choose <b>Replace</b> when Windows asks). Don’t load it from a new folder.</li></ul></li>
     <li>Open <code>chrome://extensions</code> and click the <b>reload ↻</b> icon on QA Kit (④ in the picture in section 2).</li>
-    <li>Reload any open test pages. Old pages keep running the previous version until reloaded.</li>
-    <li>Check that the version number changed. Firefox: remove the old temporary add-on and load the new one.</li>
+    <li>Reload any open test pages. Old pages keep running the old copy until reloaded.</li>
+    <li>Firefox: remove the old temporary add-on and load the new one.</li>
   </ol>
   <p>Your test files, mappings and settings are kept. Only <b>Setup → Danger zone → Clear all data</b> removes them.</p>
 
@@ -606,7 +606,7 @@
   <ol class="steps">
     <li><b>Check with IT.</b> Company-managed Chrome or Edge can block <b>Developer mode</b> or <b>Load unpacked</b>. Ask IT to allow QA Kit (or developer-mode extensions) for the QA team, or testers get stuck at section 2.</li>
     <li><b>Give repository access.</b> GitHub repository <b>Settings → Collaborators → Add people</b>, one per tester. Or share the ready-made zips instead (next step).</li>
-    <li><b>Publish ready-made zips</b> (<code>qa-kit-chrome.zip</code>, <code>qa-kit-firefox.zip</code>) in one place everyone can reach: a GitHub Release or a shared drive folder.</li>
+    <li><b>Share ready-made zips</b> (<code>qa-kit-chrome.zip</code>, <code>qa-kit-firefox.zip</code>) in one place everyone can reach, for example a shared drive folder, and replace them there after each update.</li>
     <li><b>Fill in the owner and the team channel</b> in section 10 (“Reporting a problem”).</li>
     <li><b>Prepare the shared setup</b> from section 13 (standard test files, allowed domains).</li>
     <li><b>Share this guide</b> and agree the team rules in section 12.</li>
@@ -658,21 +658,20 @@
   </ol>
   <p>Firefox: closing Firefox removes the temporary add-on.</p>
 
-  <h2 style="margin-top:16pt"><span class="num">15</span>Releasing a new version (QA Kit owner)</h2>
-  <p>Follow these steps every time, so the whole team stays on the same version. <b>Once on your computer:</b> install Node.js, then run <code>npm install</code> in the project folder.</p>
+  <h2 style="margin-top:16pt"><span class="num">15</span>Publishing an update (QA Kit owner)</h2>
+  <p>Follow these steps every time you change QA Kit, so the whole team stays on the same copy. <b>Once on your computer:</b> install Node.js, then run <code>npm install</code> in the project folder.</p>
   <ol class="steps">
-    <li><b>Raise the version number</b> to the same value in <code>package.json</code>, <code>manifest.json</code> and <code>manifest.firefox.json</code>: 2.3.0 for new features, 2.2.1 for fixes only.</li>
-    <li><b>Write the changes</b> at the top of <code>CHANGELOG.md</code> in plain words (Added / Changed / Fixed). Update <code>FEATURES.md</code> if a button or step changed. For this guide: edit <code>docs/team-guide/guide.html</code>, run <code>npm run guide:shots</code> if screens changed, then <code>npm run guide:pdf</code>.</li>
+    <li><b>Write down what changed</b> at the top of <code>CHANGELOG.md</code>, under today’s date, in plain words (Added / Changed / Fixed). Update <code>FEATURES.md</code> if a button or step changed. For this guide: edit <code>docs/team-guide/guide.html</code>, run <code>npm run guide:shots</code> if screens changed, then <code>npm run guide:pdf</code>.</li>
     <li><b>Check the code:</b> <code>npm run lint</code> must show no errors.</li>
-    <li><b>Run the browser tests:</b> <code>npm run test:e2e</code> (builds the Chrome version, then runs about 50 real-browser tests). All must pass.</li>
+    <li><b>Run the browser tests:</b> <code>npm run test:e2e</code> (builds the Chrome package, then runs about 50 real-browser tests). All must pass.</li>
     <li><b>Build both packages:</b> <code>npm run build:chrome</code> and <code>npm run build:firefox</code> create <code>dist/qa-kit-chrome.zip</code> and <code>dist/qa-kit-firefox.zip</code>.</li>
     <li><b>Try it yourself:</b> reload the extension from <code>dist/chrome</code>, then do one Quick fill and one upload on a test form.</li>
-    <li><b>Publish:</b> commit, push to <code>main</code>, and create a GitHub Release named after the version (for example <code>v2.3.0</code>) with both zips and the changelog text.</li>
-    <li><b>Tell the team</b> in the team channel: the version, what changed, and “update using section 10”.</li>
+    <li><b>Publish:</b> commit and push to <code>main</code>, and replace the two zips in the team’s shared folder.</li>
+    <li><b>Tell the team</b> in the team channel: what changed, and “please update (section 10)”.</li>
   </ol>
   <div class="callout tip"><b>Good habits</b>
-    <ul><li>One version, one release: don’t change files after publishing a version, make a new one.</li>
-    <li>When a tester reports a page QA Kit can’t fill, ask for the saved page and the Activity log, fix it, add a test for it, and include it in the next release.</li>
+    <ul><li>Leave the number in <code>manifest.json</code> as it is. Chrome requires one, but the team tracks updates by date, not by number.</li>
+    <li>When a tester reports a page QA Kit can’t fill, ask for the saved page and the Activity log, fix it, add a test for it, and include it in the next update.</li>
     <li>Never change the Firefox add-on ID (<code>qa-kits@local.qakits</code>), or Firefox users lose their stored data.</li></ul></div>
 </section>
 
@@ -696,7 +695,7 @@
     <dt>Does it work in Edge, Firefox or Safari?</dt>
     <dd>Edge: yes, everything (same as Chrome). Firefox: yes, without recording, screenshots, network and screen sizes. Safari: no.</dd>
     <dt>My files and settings disappeared.</dt>
-    <dd>You probably loaded a new version from a different folder. Remove that copy in <code>chrome://extensions</code>, and update the original folder instead (section 10).</dd>
+    <dd>You probably loaded an update from a different folder. Remove that copy in <code>chrome://extensions</code>, and update the original folder instead (section 10).</dd>
     <dt>Can two testers share settings?</dt>
     <dd>Not automatically yet. Follow section 13 to keep everyone’s setup the same.</dd>
     <dt>A result says “No error shown yet”. Is that a bug?</dt>
