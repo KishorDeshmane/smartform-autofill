@@ -708,21 +708,6 @@
       return null;
     }
 
-    // Boxes that stand on their own (consent, newsletter, remember me…) — never options of one question.
-    const STANDALONE_BOX_RE = /agree|consent|accept|terms|privacy|polic|confirm|declar|certif|acknowledg|authori[sz]|subscribe|newsletter|remember|keep me|stay signed|signed in|notify|notification|updates|marketing|offers|promot|opt.?(?:in|out)|same as|do not|don't|i understand|i hereby/i;
-    /** Visible text of one checkbox option: its labels, ARIA label, or the text right after it. */
-    function optionText(el) {
-      const text = getLabelText(el) || el.getAttribute('aria-label') || el.nextSibling?.textContent || el.nextElementSibling?.textContent || '';
-      return text.replace(/\s+/g, ' ').trim();
-    }
-    /** A plain container is an option list only when every box has a short, option-like label. */
-    function looksLikeOptionList(els) {
-      return els.every(el => {
-        const text = optionText(el);
-        return text.length <= 40 && !STANDALONE_BOX_RE.test(text);
-      });
-    }
-
     const containerGroups = new Map();
     unnamed.forEach(el => {
       const container = nearestSharedContainer(el, unnamed) || nearestOptionList(el, unnamed);
@@ -731,9 +716,7 @@
       containerGroups.get(container).push(el);
     });
     for (const [container, els] of containerGroups) {
-      // A fieldset / role=group is an explicit group; a plain <div> must also look like a list of options.
-      const explicitGroup = container.matches('fieldset, [role="group"], [role="radiogroup"]');
-      if (els.length > 1 && (explicitGroup || looksLikeOptionList(els))) {
+      if (els.length > 1) {
         // A readable group name for the log: legend, ARIA label, or the text just before the group.
         const legend = container.querySelector(':scope > legend')?.textContent
           || container.getAttribute('aria-label')

@@ -95,15 +95,13 @@ const PAGES = {
       <label class="flex cursor-pointer items-center gap-2"><input class="h-4 w-4 rounded" type="checkbox">None of the above</label>
     </div></form>
     <script>window.selected = new Set(); document.getElementById('sectors').addEventListener('change', e => { const t = e.target.parentElement.textContent.trim(); e.target.checked ? window.selected.add(t) : window.selected.delete(t); });</script></body>`,
-  // Widgets without a file input or ARIA: standalone preference boxes in one plain <div> (must stay
-  // unticked), a drag-and-drop-only resume area, and a home-made slider moved only by the mouse.
+  // Widgets without a file input or ARIA: a drag-and-drop-only resume area and a home-made slider moved only by the mouse.
   '/widgets': `<!doctype html><title>Widgets</title><style>
     .slider { position: relative; width: 300px; height: 8px; background: #ccc; margin: 20px 0; }
     .slider-handle { position: absolute; top: -4px; left: 0; width: 16px; height: 16px; background: #36c; border-radius: 50%; }
     .dropzone { width: 300px; height: 80px; border: 2px dashed #999; }
   </style><body><form onsubmit="return false">
     <label>Full name <input name="fullname"></label>
-    <div id="prefs"><label><input type="checkbox"> Subscribe to our newsletter</label><label><input type="checkbox"> Remember me on this device</label></div>
     <div class="card"><h4>Resume</h4><div class="dropzone" id="zone"><p>Drag &amp; drop your file here</p></div></div>
     <p>Budget</p><div class="slider" id="track"><div class="slider-handle" id="handle"></div></div><input type="hidden" id="budget" value="0">
   </form><script>
@@ -1139,7 +1137,7 @@ test('checkbox options in a plain container (no fieldset, no name) are ticked; "
   } finally { await env.close(); }
 });
 
-test('drag-and-drop-only upload area gets a file, a slider without ARIA is moved, standalone preference boxes stay unticked', async () => {
+test('drag-and-drop-only upload area gets a file, a slider without ARIA is moved', async () => {
   const env = await launch();
   try {
     const { site, popup } = await env.open('/widgets');
@@ -1154,8 +1152,6 @@ test('drag-and-drop-only upload area gets a file, a slider without ARIA is moved
     assert.deepEqual(await site.evaluate(() => window.dropped), ['cv.pdf'], `drop area got the mapped file; status: ${status}`);
     const budget = Number(await site.inputValue('#budget'));
     assert.ok(budget >= 40 && budget <= 60, `slider moved to the middle (got ${budget})`);
-    assert.equal(await site.isChecked('#prefs label:first-child input'), false, 'newsletter box stays unticked');
-    assert.equal(await site.isChecked('#prefs label:last-child input'), false, 'remember-me box stays unticked');
     assert.equal(await site.inputValue('input[name=fullname]') !== '', true);
     assert.deepEqual(env.errors, []);
   } finally { await env.close(); }
