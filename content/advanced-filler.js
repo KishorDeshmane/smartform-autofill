@@ -136,11 +136,76 @@
     if(el.getAttribute('aria-expanded')==='true')el.dispatchEvent(new el.ownerDocument.defaultView.KeyboardEvent('keydown',{key:'Escape',bubbles:true,composed:true}));
     return {ok:count>0,chosenText,count};
   }
-  /** Fills supported custom widgets, skips unrelated controls, and stops when cancelled. */
-  /** Custom widgets the filler can handle: rich text, ARIA checkboxes/switches/radios, sliders, spin buttons. */
+  // Slider handles without ARIA (jQuery UI, noUiSlider, rc-slider and home-made "slider > handle/thumb" divs).
+  const PLAIN_SLIDER_HANDLE='.ui-slider-handle, .noUi-handle, .rc-slider-handle, [class*="slider" i] [class*="handle" i], [class*="slider" i] [class*="thumb" i], [class*="range" i] [class*="thumb" i]';
+  const HANDLE_CLASS_RE=/(?:^|[-_\s])(?:handle|thumb|knob)(?:$|[-_\s])/i;
+  /** The track a plain slider handle moves along: the nearest ancestor clearly wider (or taller) than the handle. */
+  function sliderTrack(el){
+    const hr=el.getBoundingClientRect();
+    for(let node=el.parentElement,depth=0;node&&depth<4;node=node.parentElement,depth++){
+      const r=node.getBoundingClientRect();
+      if(r.width>=hr.width*3||r.height>=hr.height*3)return node;
+    }
+    return null;
+  }
+  /** True for a small, role-less slider handle that sits on a track (not a carousel thumbnail). */
+  function isPlainSliderHandle(el){
+    if(el.hasAttribute('role')||el.matches('input,textarea,select,img')||el.querySelector('input,select,textarea'))return false;
+    if(!el.matches(PLAIN_SLIDER_HANDLE)||!HANDLE_CLASS_RE.test(String(el.className||'')))return false;
+    if(el.closest('[class*="carousel" i],[class*="swiper" i],[class*="slick" i],[class*="splide" i],[class*="glide" i]'))return false;
+    // An ARIA slider is handled by its role; a handle inside one is not a second control.
+    if(el.closest('[role="slider"]'))return false;
+    const r=el.getBoundingClientRect();
+    return r.width>0&&r.width<=60&&r.height>0&&r.height<=60&&!!sliderTrack(el);
+  }
+  /** What a slider shows: handle position, inline style and nearby input values. Used to see if a drag worked. */
+  function sliderState(el,track){
+    const r=el.getBoundingClientRect();
+    const inputs=Array.from((track.parentElement||track).querySelectorAll('input')).map(i=>i.value).join('|');
+    return `${Math.round(r.left)},${Math.round(r.top)}|${el.getAttribute('style')||''}|${inputs}`;
+  }
+  /**
+   * Drags a plain slider handle with mouse/pointer events: a single handle to the middle of the track,
+   * range handles to 1/3 and 2/3. If the drag does not move it, clicks the track at that point instead.
+   */
+  async function dragPlainSlider(el){
+    const track=sliderTrack(el);if(!track)return false;
+    const w=el.ownerDocument.defaultView;
+    const handles=Array.from(track.querySelectorAll(PLAIN_SLIDER_HANDLE)).filter(h=>HANDLE_CLASS_RE.test(String(h.className||'')));
+    const index=Math.max(0,handles.indexOf(el)),fraction=(index+1)/(Math.max(1,handles.length)+1);
+    const tr=track.getBoundingClientRect(),hr=el.getBoundingClientRect();
+    const vertical=tr.height>tr.width*2;
+    const startX=hr.left+hr.width/2,startY=hr.top+hr.height/2;
+    const endX=vertical?startX:tr.left+tr.width*fraction,endY=vertical?tr.bottom-tr.height*fraction:startY;
+    const before=sliderState(el,track);
+    const fire=(target,type,x,y,buttons)=>{
+      const init={bubbles:true,cancelable:true,composed:true,clientX:x,clientY:y,button:0,buttons,view:w};
+      if(type.startsWith('pointer')&&w.PointerEvent)target.dispatchEvent(new w.PointerEvent(type,{...init,pointerId:1,pointerType:'mouse',isPrimary:true}));
+      else if(!type.startsWith('pointer'))target.dispatchEvent(new w.MouseEvent(type,init));
+    };
+    fire(el,'pointerdown',startX,startY,1);fire(el,'mousedown',startX,startY,1);
+    for(let step=1;step<=6;step++){
+      const x=startX+(endX-startX)*step/6,y=startY+(endY-startY)*step/6;
+      fire(el,'pointermove',x,y,1);fire(el,'mousemove',x,y,1);await sleep(16);
+    }
+    fire(el,'pointerup',endX,endY,0);fire(el,'mouseup',endX,endY,0);
+    await sleep(80);
+    if(sliderState(el,track)!==before)return true;
+    // Many sliders jump to the point where the track is clicked.
+    fire(track,'pointerdown',endX,endY,1);fire(track,'mousedown',endX,endY,1);
+    fire(track,'pointerup',endX,endY,0);fire(track,'mouseup',endX,endY,0);fire(track,'click',endX,endY,0);
+    await sleep(80);
+    return sliderState(el,track)!==before;
+  }
+
+  /** Custom widgets the filler can handle: rich text, ARIA checkboxes/switches/radios, sliders (also without ARIA), spin buttons. */
   function widgetCandidates(config={}){
-    return all('[contenteditable="true"], [role="checkbox"], [role="switch"], [role="radio"], [role="slider"], [role="spinbutton"]')
-      .filter(el=>visible(el)&&!el.matches('input,textarea,select')&&enabled(el)&&inFieldScope(el,config.fieldScope));
+    const scoped=el=>visible(el)&&enabled(el)&&inFieldScope(el,config.fieldScope);
+    const aria=all('[contenteditable="true"], [role="checkbox"], [role="switch"], [role="radio"], [role="slider"], [role="spinbutton"]')
+      .filter(el=>!el.matches('input,textarea,select')&&scoped(el));
+    const plain=all(PLAIN_SLIDER_HANDLE).filter(el=>scoped(el)&&isPlainSliderHandle(el));
+    // Page order, so the log reads top to bottom.
+    return [...aria,...plain].sort((a,b)=>(a.compareDocumentPosition(b)&4?-1:1));
   }
   /**
    * Fills one custom widget. Returns a result { element, kind, ok, reason }, or null when there is
@@ -153,6 +218,10 @@
     if(!explicitWidget && ['checkbox','switch','radio'].includes(role)) return {element:el.id||role,kind:role,ok:false,reason:'Skipped unrelated custom preference widget'};
     let ok=false,reason='Widget did not confirm the requested state';
     try{
+      if(!role&&el.getAttribute('contenteditable')!=='true'&&isPlainSliderHandle(el)){
+        ok=await dragPlainSlider(el);
+        return {element:el.id||'slider',kind:'slider',ok,reason:ok?'Slider handle moved':'Slider did not move when dragged (set it manually)'};
+      }
       if(el.getAttribute('contenteditable')==='true'){
         if(el.parentElement?.closest('[contenteditable="true"]'))return null;
         ok=write(el,settings.richTextValue||'Sample QA content for verification.');await sleep(100);ok=ok&&el.textContent.trim().length>0;

@@ -95,6 +95,34 @@ const PAGES = {
       <label class="flex cursor-pointer items-center gap-2"><input class="h-4 w-4 rounded" type="checkbox">None of the above</label>
     </div></form>
     <script>window.selected = new Set(); document.getElementById('sectors').addEventListener('change', e => { const t = e.target.parentElement.textContent.trim(); e.target.checked ? window.selected.add(t) : window.selected.delete(t); });</script></body>`,
+  // Widgets without a file input or ARIA: standalone preference boxes in one plain <div> (must stay
+  // unticked), a drag-and-drop-only resume area, and a home-made slider moved only by the mouse.
+  '/widgets': `<!doctype html><title>Widgets</title><style>
+    .slider { position: relative; width: 300px; height: 8px; background: #ccc; margin: 20px 0; }
+    .slider-handle { position: absolute; top: -4px; left: 0; width: 16px; height: 16px; background: #36c; border-radius: 50%; }
+    .dropzone { width: 300px; height: 80px; border: 2px dashed #999; }
+  </style><body><form onsubmit="return false">
+    <label>Full name <input name="fullname"></label>
+    <div id="prefs"><label><input type="checkbox"> Subscribe to our newsletter</label><label><input type="checkbox"> Remember me on this device</label></div>
+    <div class="card"><h4>Resume</h4><div class="dropzone" id="zone"><p>Drag &amp; drop your file here</p></div></div>
+    <p>Budget</p><div class="slider" id="track"><div class="slider-handle" id="handle"></div></div><input type="hidden" id="budget" value="0">
+  </form><script>
+    window.dropped = [];
+    const zone = document.getElementById('zone');
+    zone.addEventListener('dragover', e => e.preventDefault());
+    zone.addEventListener('drop', e => { e.preventDefault(); window.dropped.push(...[...e.dataTransfer.files].map(f => f.name)); zone.querySelector('p').textContent = 'Uploaded: ' + window.dropped.join(', '); });
+    const track = document.getElementById('track'), handle = document.getElementById('handle');
+    let dragging = false;
+    handle.addEventListener('mousedown', () => { dragging = true; });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const r = track.getBoundingClientRect();
+      const x = Math.max(0, Math.min(r.width, e.clientX - r.left));
+      handle.style.left = (x - 8) + 'px';
+      document.getElementById('budget').value = Math.round(x / r.width * 100);
+    });
+    document.addEventListener('mouseup', () => { dragging = false; });
+  </script></body>`,
   // "Choose File" label wrapping a hidden input whose card names no known document type.
   '/choose-file': `<!doctype html><title>Choose file</title><body><div class="space-y-2"><p>Board resolution for the applicant</p>
     <div class="flex items-center gap-3"><label class="flex cursor-pointer items-center gap-2 rounded-lg border">Choose File
@@ -763,6 +791,41 @@ test('options: settings saved on the Options page persist and reach the popup', 
   } finally { await env.close(); }
 });
 
+test('fill profiles: a profile saved on the Options page fills its fixed values on a matching site only', async () => {
+  const env = await launch();
+  try {
+    const options = await env.context.newPage();
+    await options.goto(`chrome-extension://${env.extensionId}/options/options.html`);
+    await options.click('#addProfileBtn');
+    await options.fill('#profilesList .profile-card [data-role="name"]', 'Acme QA');
+    await options.fill('#profilesList .profile-card [data-role="sites"]', 'https://*.example.test');
+    await options.fill('#profilesList .profile-card [data-role="values"]', '# Acme test team\nemail = qa+{n}@acme.test\nDesignation = QA Lead\nfirstName = Kavya');
+    assert.match(await options.textContent('#profilesList .profile-note'), /3 value\(s\).*Designation/);
+    await options.click('#saveGeneration');
+    await options.waitForTimeout(500);
+    await options.reload();
+    assert.equal(await options.inputValue('#profilesList .profile-card [data-role="sites"]'), '*.example.test');
+
+    const { site, popup } = await env.open('/modal');
+    await popup.click('#fillFormBtn');
+    await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 60000 });
+    assert.match(await site.inputValue('input[name=email]'), /^qa\+\d{6}@acme\.test$/, `status: ${await popup.textContent('#fillStatus')}`);
+    assert.equal(await site.inputValue('input[name=designation]'), 'QA Lead');
+    assert.equal(await site.inputValue('input[name=firstName]'), 'Kavya');
+    assert.match(await popup.evaluate(() => document.getElementById('logList')?.textContent || ''), /Using fill profile "Acme QA"/);
+
+    // A profile for another site changes nothing here.
+    await popup.evaluate(async () => SFFAStorage.updateSettings({ fillProfiles: [{ name: 'Other', sites: ['other.test'], values: { email: 'other@x.test' } }] }));
+    const second = await env.open('/modal');
+    await second.popup.click('#fillFormBtn');
+    await second.popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 60000 });
+    const otherEmail = await second.site.inputValue('input[name=email]');
+    assert.ok(otherEmail.includes('@'), 'a generated email is filled');
+    assert.doesNotMatch(otherEmail, /acme\.test|other@x\.test/);
+    assert.deepEqual(env.errors, []);
+  } finally { await env.close(); }
+});
+
 test('Danger zone: "Clear all data" really clears stored data after confirmation', async () => {
   const env = await launch();
   try {
@@ -1072,6 +1135,28 @@ test('checkbox options in a plain container (no fieldset, no name) are ticked; "
     const selected = await site.evaluate(() => [...window.selected].sort());
     assert.deepEqual(selected, ['Banking', 'Healthcare', 'Telecom'], `status: ${await popup.textContent('#fillStatus')}`);
     assert.equal(await site.isChecked('#sectors label:last-child input'), false, 'None of the above stays unticked');
+    assert.deepEqual(env.errors, []);
+  } finally { await env.close(); }
+});
+
+test('drag-and-drop-only upload area gets a file, a slider without ARIA is moved, standalone preference boxes stay unticked', async () => {
+  const env = await launch();
+  try {
+    const { site, popup } = await env.open('/widgets');
+    await popup.evaluate(() => { document.getElementById('filesDetails').open = true; });
+    await popup.setInputFiles('#fileInput', { name: 'cv.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 test') });
+    await popup.waitForSelector('#fileList .file-item', { timeout: 10000 });
+    await popup.evaluate(async () => SFFAStorage.addMappingFile('resume', (await SFFAStorage.getFiles())[0].id));
+    await popup.click('#fillFormBtn');
+    await popup.waitForSelector('#fillStatus.success, #fillStatus.warning, #fillStatus.error', { timeout: 60000 });
+    const status = await popup.textContent('#fillStatus');
+    if (process.env.QAKIT_DEBUG) console.log(`LOG:\n${await popup.evaluate(() => [...document.querySelectorAll('#logList li')].map(li => li.textContent.trim()).join('\n'))}`);
+    assert.deepEqual(await site.evaluate(() => window.dropped), ['cv.pdf'], `drop area got the mapped file; status: ${status}`);
+    const budget = Number(await site.inputValue('#budget'));
+    assert.ok(budget >= 40 && budget <= 60, `slider moved to the middle (got ${budget})`);
+    assert.equal(await site.isChecked('#prefs label:first-child input'), false, 'newsletter box stays unticked');
+    assert.equal(await site.isChecked('#prefs label:last-child input'), false, 'remember-me box stays unticked');
+    assert.equal(await site.inputValue('input[name=fullname]') !== '', true);
     assert.deepEqual(env.errors, []);
   } finally { await env.close(); }
 });

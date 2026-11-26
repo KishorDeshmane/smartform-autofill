@@ -496,6 +496,53 @@
     if (sharedInputs.size) results.file = results.file.filter(field => field.viaTrigger || !sharedInputs.has(field.element));
   }
 
+  const DROP_ZONE_RE = /drag\s*(?:and|&|'?n'?)\s*drop|drop\s+(?:your\s+|the\s+|a\s+)?(?:files?|documents?|images?|photos?|pdfs?|attachments?)\b|drop\s+(?:it|them)\s+here/i;
+
+  /**
+   * Upload areas that only accept drag and drop ("Drag & drop files here") and have no file input of
+   * their own. Each becomes { element: zone, type, label, dropZone: true }; the filler drops the file
+   * on it with a synthetic drop event. Areas with a file input nearby are left to that input.
+   */
+  function addDropZoneFileFields(results, allFileInputEls, fileKeywordMap) {
+    /** Text of a node with a space between elements ("Resume" + "Drag & drop" must not become "ResumeDrag"). */
+    const spacedText = node => {
+      const parts = [];
+      const walker = document.createTreeWalker(node, 4 /* NodeFilter.SHOW_TEXT */);
+      while (walker.nextNode()) parts.push(walker.currentNode.nodeValue);
+      return parts.join(' ').replace(/\s+/g, ' ').trim();
+    };
+    const UPLOAD_WORD_RE = /\b(?:files?|uploads?|documents?|images?|photos?|pdfs?|attach\w*|browse|resume|cv)\b/i;
+    const matches = queryAll('div, section, label, span, p, li, strong, b, [role="button"]').filter(el => {
+      const text = spacedText(el);
+      // "Drag and drop items in our editor" is not an upload area: it must also talk about files.
+      return text.length <= 200 && DROP_ZONE_RE.test(text) && UPLOAD_WORD_RE.test(text) && isVisible(el) && !isHoneypot(el);
+    });
+    // Innermost text only: a wrapper that contains another match is the same zone.
+    const zones = matches.filter(el => !matches.some(other => other !== el && el.contains(other)));
+    const HEADING = 'h1, h2, h3, h4, h5, h6, legend, [role="heading"], label';
+    for (const zone of zones) {
+      let card = zone;
+      for (let depth = 0; depth < 3 && card.parentElement && card.parentElement !== document.body && !card.parentElement.matches('form'); depth++) card = card.parentElement;
+      if (allFileInputEls.some(input => card.contains(input))) continue;
+      // "Click to browse or drag and drop" next to a Browse button: that button already fills this card.
+      if (results.file.some(field => field.trigger && card.contains(field.trigger))) continue;
+      if (card.querySelector('button, [role="button"], a') && Array.from(card.querySelectorAll('button, [role="button"], a')).some(el => UPLOAD_TRIGGER_RE.test(controlText(el)))) continue;
+      if (card.querySelector('input:not([type="hidden"]), select, textarea')) continue;
+      const heading = card.querySelector(HEADING);
+      const cardText = spacedText(card);
+      const label = ((heading && !zone.contains(heading) ? controlText(heading) : '') || cardText).slice(0, 80);
+      const classification = classifyField(zone, fileKeywordMap, cardText);
+      results.file.push({
+        element: zone,
+        label,
+        type: classification ? classification.type : 'genericFile',
+        score: classification ? classification.score : 0,
+        multiple: /files|documents|images|photos|attachments|them/i.test(zone.textContent || ''),
+        dropZone: true
+      });
+    }
+  }
+
   function isFileUploadHoneypot(el) {
     for (let node = el; node; node = node.parentElement || node.getRootNode?.().host) {
       if (isHoneypot(node)) return true;
@@ -661,6 +708,21 @@
       return null;
     }
 
+    // Boxes that stand on their own (consent, newsletter, remember me…) — never options of one question.
+    const STANDALONE_BOX_RE = /agree|consent|accept|terms|privacy|polic|confirm|declar|certif|acknowledg|authori[sz]|subscribe|newsletter|remember|keep me|stay signed|signed in|notify|notification|updates|marketing|offers|promot|opt.?(?:in|out)|same as|do not|don't|i understand|i hereby/i;
+    /** Visible text of one checkbox option: its labels, ARIA label, or the text right after it. */
+    function optionText(el) {
+      const text = getLabelText(el) || el.getAttribute('aria-label') || el.nextSibling?.textContent || el.nextElementSibling?.textContent || '';
+      return text.replace(/\s+/g, ' ').trim();
+    }
+    /** A plain container is an option list only when every box has a short, option-like label. */
+    function looksLikeOptionList(els) {
+      return els.every(el => {
+        const text = optionText(el);
+        return text.length <= 40 && !STANDALONE_BOX_RE.test(text);
+      });
+    }
+
     const containerGroups = new Map();
     unnamed.forEach(el => {
       const container = nearestSharedContainer(el, unnamed) || nearestOptionList(el, unnamed);
@@ -669,7 +731,9 @@
       containerGroups.get(container).push(el);
     });
     for (const [container, els] of containerGroups) {
-      if (els.length > 1) {
+      // A fieldset / role=group is an explicit group; a plain <div> must also look like a list of options.
+      const explicitGroup = container.matches('fieldset, [role="group"], [role="radiogroup"]');
+      if (els.length > 1 && (explicitGroup || looksLikeOptionList(els))) {
         // A readable group name for the log: legend, ARIA label, or the text just before the group.
         const legend = container.querySelector(':scope > legend')?.textContent
           || container.getAttribute('aria-label')
@@ -699,6 +763,7 @@
       });
     });
     addTriggerFileFields(results, allFileInputEls, fileKeywordMap);
+    addDropZoneFileFields(results, allFileInputEls, fileKeywordMap);
 
     queryAll('[role="combobox"], [role="listbox"], [aria-haspopup="listbox"]').forEach(el => {
       if (!isVisible(el) || isHoneypot(el) || el.tagName === 'SELECT') return;

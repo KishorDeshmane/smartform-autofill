@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### 2026-11-26
+- **Fill profiles** (Options → Fill profiles): fixed test values per project, for the sites you list (`*.acme.test` covers the domain and its subdomains). Write one value per line, e.g. `email = qa+{n}@acme.test` or `Company name = Acme Test Pvt Ltd`; `{n}` becomes 6 random digits, the same in every field of one fill. On other sites nothing changes. The Activity log names the profile used.
+- **Drag-and-drop-only upload areas are filled.** Areas that only say "Drag & drop your file here" and have no file box now get the mapped file dropped on them. Areas with a Browse button or a file box are filled as before.
+- **Sliders without accessibility tags are set.** Home-made, jQuery UI, noUiSlider and rc-slider handles are dragged to the middle of their track (range sliders to 1/3 and 2/3); if dragging does nothing, the track is clicked there. The log says when a slider did not move.
+- **Fixed: unrelated optional checkboxes were ticked.** Unnamed boxes such as "Subscribe to our newsletter" and "Remember me" in one plain container were treated as one list of options and ticked. A plain container now counts as a list only when every box has a short option label (Telecom, Banking…).
+- **Security scan is fairer.** The score can now go below 40 (any High finding keeps it under 80). Trackers are found only from the page's real script, frame and image addresses or tracker code, not from words in the page text; `eval` / `document.write` only from real inline scripts. A new-tab link without `rel=noopener` is now Low (current browsers add it themselves), and a plain `postMessage` is a Low "review" note instead of Medium. Unencrypted `ws://` WebSockets get their own finding. The result now says that server headers and cookies are not checked.
+
 ### Changed
 - Renamed the extension to **QA Kit** (store name, toolbar title, popup, settings, help, exports). Saved files, mappings and settings are kept.
 - **More wrong values in Wrong data.** Every kind of field gets more realistic mistakes: e.g. email 4 → 10 (space inside, two dots, starts with a dot, no domain ending…), mobile 4 → 9 (wrong first digit, letter O for zero, country code…), Aadhaar, PAN, GST, IFSC, PIN code, number, date, password, URL and name too. Values a correct form may accept (country code, decimal, emoji…) are reported but never counted as failures.

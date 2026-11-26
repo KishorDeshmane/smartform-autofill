@@ -37,6 +37,8 @@
       const hostname = window.location.hostname;
       const siteConfig = await window.SFFAStorage.getSiteConfig(hostname);
       const customSelectors = siteConfig?.customSelectors || null;
+      const fillProfile = window.SFFAStorage.matchFillProfile?.(settings.fillProfiles, hostname);
+      if (fillProfile) await RT.log(`Using fill profile "${fillProfile.name || 'Unnamed'}" for ${hostname} (${Object.keys(fillProfile.values).length} fixed value(s))`, 'info');
 
       const detected = window.SFFAFormDetector.detectFormFields(customSelectors, settings.extraFileKeywords);
       const scopedDetected = fieldScope

@@ -45,6 +45,9 @@
     aiMaskPageTitle: true,
     credentialsBySite: {},
     repeatRowsBySite: {},
+    // Fill profiles: [{ name, sites: ['qa.acme.test', '*.acme.test'], values: { email: 'qa+{n}@acme.test' } }].
+    // On a matching site their values win over generated data and over the global imported values.
+    fillProfiles: [],
     multiSelectCount: 2
   };
 
@@ -441,6 +444,39 @@
     await set(key, list);
   }
 
+  /** Hostname part of "https://Sub.Example.test:8080/path" → "sub.example.test" (keeps a leading "*."). */
+  function normalizeSitePattern(value) {
+    const text = String(value || '').trim().toLowerCase();
+    const wildcard = text.startsWith('*.');
+    const host = (wildcard ? text.slice(2) : text).replace(/^[a-z]+:\/\//, '').split(/[/?#]/)[0].replace(/:\d+$/, '').replace(/^\.+|\.+$/g, '');
+    return host ? `${wildcard ? '*.' : ''}${host}` : '';
+  }
+
+  /**
+   * The fill profile for a hostname: an exact site match first, then the longest "*.domain" match
+   * (which also covers the bare domain). Returns null when no profile lists this site.
+   */
+  function matchFillProfile(profiles, hostname) {
+    const host = String(hostname || '').toLowerCase();
+    if (!host || !Array.isArray(profiles)) return null;
+    let best = null, bestScore = 0;
+    for (const profile of profiles) {
+      if (!profile || typeof profile !== 'object' || !profile.values || typeof profile.values !== 'object') continue;
+      for (const raw of profile.sites || []) {
+        const pattern = normalizeSitePattern(raw);
+        if (!pattern) continue;
+        let score = 0;
+        if (pattern === host) score = 1000 + pattern.length;
+        else if (pattern.startsWith('*.')) {
+          const domain = pattern.slice(2);
+          if (host === domain || host.endsWith(`.${domain}`)) score = domain.length;
+        }
+        if (score > bestScore) { best = profile; bestScore = score; }
+      }
+    }
+    return best;
+  }
+
   root.SFFAStorage = {
     KEYS,
     DEFAULT_SETTINGS,
@@ -453,7 +489,8 @@
     getLastData, setLastData,
     getLastFilledDisplay, setLastFilledDisplay,
     getSiteConfigs, getSiteConfig, setSiteConfig, deleteSiteConfig,
-    getUsed, addUsed
+    getUsed, addUsed,
+    normalizeSitePattern, matchFillProfile
   };
   const mutationNames = [
     'addFile', 'addFiles', 'deleteFile', 'renameFile', 'migrateLegacyFiles',

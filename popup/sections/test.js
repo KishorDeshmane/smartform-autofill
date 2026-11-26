@@ -964,7 +964,7 @@ async function onSecurityScanClick() {
     document.getElementById('securityScanActions').classList.remove('hidden');
     const items=Array.isArray(r?.findings) && r.findings.length ? r.findings.map(f=>h('li',{},[h('span',{text:`${f.severity}: ${f.title} (confidence: ${f.confidence || 'Unrated'}) — ${f.description}`}),f.affected?.length?h('div',{class:'scan-fix',text:`Affected (${f.affected.length}): ${f.affected.slice(0,3).map(u=>window.SFFAQAReport.sanitizeUrl(u)).join(', ')}${f.affected.length>3?` and ${f.affected.length-3} more`:''}`}):null,f.remediation?h('div',{class:'scan-fix',text:`How to fix: ${f.remediation}`}):null])) : [h('li',{text:'No passive findings detected.'})];
     for (const warning of r.warnings || []) items.push(h('li', {text: `UNVERIFIED: ${warning.description}`}));
-    resultEl.replaceChildren(h('div',{class:'fill-result-title',text:`Security score: ${r.score}/100${r.warnings?.length ? ' (partial scan)' : ''}`}),h('p',{text:`${r.findings.length} finding(s) | ${safeScanUrl}`}),h('ul',{class:'scan-issue-list'},items));
+    resultEl.replaceChildren(h('div',{class:'fill-result-title',text:`Security score: ${r.score}/100${r.warnings?.length ? ' (partial scan)' : ''}`}),h('p',{text:`${r.findings.length} finding(s) | ${safeScanUrl}`}),h('ul',{class:'scan-issue-list'},items),h('p',{class:'scan-fix',text:'Passive page check only: server security headers (CSP, HSTS) and cookies are not tested.'}));
   } catch(e){ showToast(e.message); } finally { btn.disabled=false; btn.textContent='Security scan'; }
 }
 

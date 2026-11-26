@@ -134,6 +134,45 @@
     }
   }
 
+  /**
+   * Drops stored files on a drag-and-drop-only upload area (no file input): dispatches dragenter,
+   * dragover and drop with a DataTransfer holding the files. The page took the files when its drop
+   * handler cancelled the event (every drop-zone library does, to stop the browser opening the file).
+   */
+  function dropFilesOnZone(zone, fileRecords, multiple = true) {
+    try {
+      if (!zone?.isConnected) return { success: false, reason: 'Drop area is no longer on the page', stale: true };
+      if (!fileRecords?.length) return { success: false, reason: 'No files provided' };
+      const targetWindow = zone.ownerDocument.defaultView || window;
+      const records = multiple ? fileRecords : fileRecords.slice(0, 1);
+      const dataTransfer = new targetWindow.DataTransfer();
+      const attachedRecordIds = [];
+      let unavailableCount = 0;
+      for (const record of records) {
+        const file = materializeFile(record, targetWindow.File);
+        if (!file) { unavailableCount++; continue; }
+        dataTransfer.items.add(file);
+        attachedRecordIds.push(record.id);
+      }
+      if (!dataTransfer.items.length) return { success: false, reason: 'No file content available to drop' };
+      const fire = type => zone.dispatchEvent(new targetWindow.DragEvent(type, { bubbles: true, cancelable: true, composed: true, dataTransfer }));
+      fire('dragenter');
+      fire('dragover');
+      const handled = !fire('drop');
+      if (!handled) return { success: false, reason: 'The drop area did not take the file (it may need a real mouse drag) — upload it manually' };
+      return {
+        success: true,
+        attached: dataTransfer.items.length,
+        attachedRecordIds,
+        consumedByPage: true,
+        skipped: fileRecords.length - records.length + unavailableCount,
+        contentUnavailable: unavailableCount ? Array(unavailableCount).fill('unavailable') : undefined
+      };
+    } catch (_) {
+      return { success: false, reason: 'File upload requires manual selection' };
+    }
+  }
+
   /** Convenience wrapper that assigns one file through the multi-file implementation. */
   function assignFileToInput(inputEl, fileRecord) {
     return assignFilesToInput(inputEl, fileRecord ? [fileRecord] : []);
@@ -145,5 +184,5 @@
     return !tokens || fileMatchesAccept(record, tokens);
   }
 
-  root.SFFAFileUploader = { assignFilesToInput, assignFileToInput, dataUrlToFile, base64ToFile, recordFitsInput };
+  root.SFFAFileUploader = { assignFilesToInput, assignFileToInput, dropFilesOnZone, dataUrlToFile, base64ToFile, recordFitsInput };
 })(window);

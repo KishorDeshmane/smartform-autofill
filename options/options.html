@@ -21,6 +21,7 @@
     <nav class="sidenav" aria-label="Settings sections">
       <a href="#general" data-icon="settings">General</a>
       <a href="#data" data-icon="database">Data &amp; seed</a>
+      <a href="#profiles" data-icon="layers">Fill profiles</a>
       <a href="#files" data-icon="upload">Files &amp; mappings</a>
       <a href="#selectors" data-icon="target">Site selectors</a>
       <a href="#credentials" data-icon="lock">Credentials</a>
@@ -79,6 +80,12 @@
         <label class="field"><span>Repeatable rows by site (JSON)</span><textarea id="repeatRowsBySite" class="mono" rows="3" placeholder='{"example.com":[{"buttonSelector":"#addRow","rowSelector":".row","count":2}]}'></textarea></label>
       </section>
 
+      <section id="profiles" class="panel" aria-labelledby="profilesTitle">
+        <div class="panel-head"><h2 id="profilesTitle">Fill profiles</h2><p>Fixed test values per project. On a site a profile lists, its values are used instead of random data.</p></div>
+        <div id="profilesList" class="profiles-list"></div>
+        <small class="hint">One value per line: <code>field = value</code>. The field can be a data type (<code>email</code>, <code>mobile</code>, <code>organizationName</code>, <code>city</code>, <code>pinCode</code>&hellip;), a field's label (<code>Company name</code>) or its name/id. <code>{n}</code> becomes 6 random digits, the same in every field of one fill (e.g. <code>qa+{n}@acme.test</code>). Sites are hostnames, comma-separated; <code>*.acme.test</code> covers acme.test and all its subdomains. Lines starting with <code>#</code> are ignored.</small>
+      </section>
+
       <section id="files" class="panel" aria-labelledby="filesTitle">
         <div class="panel-head"><h2 id="filesTitle">Files &amp; mappings</h2><p>Keywords that identify file-upload fields, in addition to the built-in ones.</p></div>
         <div id="mappingsList" class="mappings-list"></div>
@@ -117,7 +124,7 @@
       </section>
 
       <div class="savebar">
-        <span class="hint">Saves General, Data, Files, Credentials, AI and Privacy settings. Site selectors have their own Save button.</span>
+        <span class="hint">Saves General, Data, Fill profiles, Files, Credentials, AI and Privacy settings. Site selectors have their own Save button.</span>
         <button id="saveGeneration" class="btn btn-primary" data-icon="check">Save settings</button>
       </div>
     </main>

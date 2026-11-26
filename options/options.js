@@ -166,6 +166,94 @@ async function loadGenerationSettings() {
   document.getElementById('repeatRowsBySite').value = JSON.stringify(settings.repeatRowsBySite || {}, null, 2);
 }
 
+// ---------------- Fill profiles ----------------
+/** Data types the generator fills, so a profile line like "email = ..." can be checked as it is typed. */
+const PROFILE_KNOWN_TYPES = ['firstName', 'middleName', 'lastName', 'fullName', 'fatherName', 'motherName', 'spouseName', 'email', 'mobile',
+  'alternateMobile', 'landline', 'website', 'organizationName', 'designation', 'department', 'occupation', 'qualification', 'experience',
+  'registrationNumber', 'referenceNumber', 'paymentReference', 'bankAccountNumber', 'iban', 'ifscCode', 'bankName', 'gstNumber',
+  'vehicleNumber', 'country', 'state', 'district', 'city', 'pinCode', 'addressLine', 'identityNumber', 'panNumber', 'aadhaarNumber', 'dob', 'age', 'gender', 'username'];
+
+/** Parses "field = value" lines (# comments and blank lines ignored) into { values, errors }. */
+function parseProfileValues(text) {
+  const values = {}, errors = [];
+  String(text || '').split(/\r?\n/).forEach((line, index) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const at = trimmed.indexOf('=');
+    if (at <= 0) { errors.push(`line ${index + 1}: write it as "field = value"`); return; }
+    values[trimmed.slice(0, at).trim()] = trimmed.slice(at + 1).trim();
+  });
+  return { values, errors };
+}
+
+/** Turns stored values back into editable "field = value" lines. */
+function profileValuesText(values) {
+  return Object.entries(values || {}).map(([key, value]) => `${key} = ${value}`).join('\n');
+}
+
+/** Shows how a profile's lines are read: how many values, and which names are labels rather than known types. */
+function updateProfileNote(card) {
+  const note = card.querySelector('.profile-note');
+  const { values, errors } = parseProfileValues(card.querySelector('[data-role="values"]').value);
+  const keys = Object.keys(values);
+  const labels = keys.filter(key => !PROFILE_KNOWN_TYPES.includes(key));
+  note.classList.toggle('warn', errors.length > 0);
+  note.textContent = errors.length ? `Fix: ${errors.slice(0, 2).join('; ')}`
+    : `${keys.length} value(s)${labels.length ? ` · matched by field label/name: ${labels.slice(0, 4).join(', ')}${labels.length > 4 ? '…' : ''}` : ''}`;
+}
+
+/** Adds one editable profile card (name, sites, values) above the "Add profile" button. */
+function addProfileCard(profile = {}) {
+  const container = document.getElementById('profilesList');
+  const addBtn = container.querySelector(':scope > .btn');
+  const { h } = window.SFFADom;
+  const removeBtn = h('button', { class: 'remove-btn', type: 'button', title: 'Delete profile', 'aria-label': 'Delete profile', 'data-icon': 'trash' });
+  const values = h('textarea', { class: 'mono', rows: '4', 'data-role': 'values', spellcheck: 'false', 'aria-label': 'Profile values', placeholder: 'email = qa+{n}@acme.test\norganizationName = Acme Test Pvt Ltd\ncity = Pune\nCompany code = ACME-01' });
+  values.value = profileValuesText(profile.values);
+  const name = h('input', { type: 'text', 'data-role': 'name', placeholder: 'Profile name (e.g. Acme staging)', 'aria-label': 'Profile name', maxlength: '60' });
+  name.value = profile.name || '';
+  const sites = h('input', { type: 'text', 'data-role': 'sites', placeholder: 'Sites: staging.acme.test, *.acme-qa.test', 'aria-label': 'Profile sites', spellcheck: 'false' });
+  sites.value = (profile.sites || []).join(', ');
+  const card = h('div', { class: 'profile-card' }, [
+    h('div', { class: 'profile-head' }, [name, removeBtn]),
+    sites,
+    values,
+    h('div', { class: 'profile-note', 'aria-live': 'polite' })
+  ]);
+  removeBtn.addEventListener('click', () => card.remove());
+  values.addEventListener('input', () => updateProfileNote(card));
+  updateProfileNote(card);
+  if (addBtn) container.insertBefore(card, addBtn); else container.appendChild(card);
+  return card;
+}
+
+/** Renders the saved fill profiles and the "Add profile" button. */
+async function loadFillProfiles() {
+  const settings = await SFFAStorage.getSettings();
+  const container = document.getElementById('profilesList');
+  container.replaceChildren();
+  const addBtn = window.SFFADom.h('button', { class: 'btn btn-small', type: 'button', 'data-icon': 'plus', id: 'addProfileBtn', text: 'Add profile' });
+  addBtn.addEventListener('click', () => addProfileCard().querySelector('[data-role="name"]').focus());
+  container.appendChild(addBtn);
+  (Array.isArray(settings.fillProfiles) ? settings.fillProfiles : []).forEach(profile => addProfileCard(profile));
+}
+
+/** Reads every profile card; throws a readable error for a card that cannot be saved. */
+function collectFillProfiles() {
+  const profiles = [];
+  document.querySelectorAll('#profilesList .profile-card').forEach((card, index) => {
+    const name = card.querySelector('[data-role="name"]').value.trim() || `Profile ${index + 1}`;
+    const sites = parseCsv(card.querySelector('[data-role="sites"]').value).map(site => SFFAStorage.normalizeSitePattern(site)).filter(Boolean);
+    const { values, errors } = parseProfileValues(card.querySelector('[data-role="values"]').value);
+    if (!sites.length && !Object.keys(values).length) return; // an empty new card is simply dropped
+    if (errors.length) throw new Error(`Fill profile "${name}": ${errors[0]}`);
+    if (!sites.length) throw new Error(`Fill profile "${name}" needs at least one site`);
+    if (!Object.keys(values).length) throw new Error(`Fill profile "${name}" has no values`);
+    profiles.push({ name, sites: [...new Set(sites)], values });
+  });
+  return profiles;
+}
+
 /** Validates and saves generation settings from the options form, showing errors in status. */
 async function saveGenerationSettings() {
   try {
@@ -193,7 +281,8 @@ async function saveGenerationSettings() {
         return url.origin;
       }),
       credentialsBySite: JSON.parse(document.getElementById('credentialsBySite').value || '{}'),
-      repeatRowsBySite: validateRepeatRows(JSON.parse(document.getElementById('repeatRowsBySite').value || '{}'))
+      repeatRowsBySite: validateRepeatRows(JSON.parse(document.getElementById('repeatRowsBySite').value || '{}')),
+      fillProfiles: collectFillProfiles()
     };
     await SFFAStorage.updateSettings(patch);
     showStatus('Settings saved');
@@ -373,6 +462,7 @@ function applyPickedSelector(message) {
 /** Loads options data and installs the page's settings event handlers. */
 async function init() {
   await loadGenerationSettings();
+  await loadFillProfiles();
   await loadMappingKeywords();
   buildSelectorGrid();
   const pickerType = document.getElementById('selectorPickType');

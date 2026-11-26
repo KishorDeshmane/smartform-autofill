@@ -84,6 +84,7 @@ If some custom dropdowns could not be set back, the result says so by name (e.g.
    - If a box has no mapped file, an unmapped file in an accepted format is used. If every file is mapped to other kinds, one of those is used, so the box is not left empty.
    - If there are more upload boxes than files, files are used again so no box stays empty.
    - "Replace document" buttons on already uploaded files are never touched.
+   - Upload areas that only say "Drag & drop your file here" (no Browse button, no file box) get the file dropped on them.
    - If the page refuses a file (for example "File type not allowed" or "Upload failed"), that box is counted as failed and the Activity log shows the page's message.
    - If the page locks its upload boxes while it sends a file to its server, the extension waits (up to 30 seconds) before the next upload. If the page redraws its upload boxes, each file still goes to its own box.
 
@@ -167,6 +168,7 @@ Recording does not use Chrome's debugger, so Chrome shows no "debugging" bar for
 |---|---|
 | **General** | **Allowed test environments** (header shows *Allowed test env* / *Not allowlisted*), **Same-origin link check limit**, **Multi-select choices per field**, spelling ignore list and dictionary, **Fill order** (*Page order* recommended), **Tick "Same as …" boxes**, **Keep values already in the form** (on by default: fields that already have a value are left alone; off: every field gets new test data), **Reduce visual effects**. |
 | **Data & seed** | **Identity number format**, **Email / mobile locale**, **Data seed** (same seed = same values; shown in the Full QA report), registration number pattern, test PIN codes, first/last name pools, **Import project test values (CSV or JSON)** (they win over generated values), repeatable rows by site. |
+| **Fill profiles** | Fixed test values per project, used only on the sites the profile lists (`*.acme.test` = the domain and all subdomains). One line per value: `email = qa+{n}@acme.test`, `Company name = Acme Test Pvt Ltd`. The left side is a data type, a field label or a field name/id; `{n}` becomes 6 random digits, the same in every field of one fill. The Activity log says which profile was used. |
 | **Files & mappings** | Extra keywords that identify upload fields. |
 | **Site selectors** | Exact CSS selectors per field type for one website. Use **Pick field on active page**, then **Save site config**. |
 | **Credentials** | Test logins per site (JSON). Not encrypted — throwaway test accounts only. |

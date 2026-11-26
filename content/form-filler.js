@@ -481,9 +481,24 @@
     }
   }
 
+  // One settings object is read per fill, so caching on it keeps "{n}" the same for the whole fill
+  // ("Email" and "Confirm email" get the same address) and new on the next fill.
+  const profileValuesCache = new WeakMap();
+  /** Profile values with "{n}" replaced by 6 random digits (e.g. "qa+{n}@acme.test" stays unique per fill). */
+  function withProfileTokens(values, settings) {
+    if (settings && typeof settings === 'object' && profileValuesCache.has(settings)) return profileValuesCache.get(settings);
+    const n = String(Math.floor(100000 + Math.random() * 900000));
+    const out = {};
+    for (const [key, value] of Object.entries(values || {})) out[key] = String(value).replace(/\{n\}/gi, n);
+    if (settings && typeof settings === 'object') profileValuesCache.set(settings, out);
+    return out;
+  }
+
   /** Resolves an imported project value by field name, id, accessible label, or type. */
   function resolveFieldTestData(field, testData, settings) {
-    const imported = settings?.importedTestData;
+    // The fill profile for this site (Settings → Fill profiles) wins over the global imported values.
+    const profile = root.SFFAStorage?.matchFillProfile?.(settings?.fillProfiles, root.location?.hostname);
+    const imported = profile ? { ...(settings?.importedTestData || {}), ...withProfileTokens(profile.values, settings) } : settings?.importedTestData;
     // A box labelled Aadhaar is an "identity number"; give it a real 12-digit Aadhaar, not a random ID kind.
     if (field.type === 'identityNumber' && testData?.aadhaarNumber && field.element) {
       const el = field.element;
@@ -1131,7 +1146,7 @@
           continue;
         }
       }
-      if (!element.isConnected) {
+      if (!element.isConnected && !field.dropZone) {
         const fresh = findFreshFileInputByType(type, options.touchedFileInputs);
         if (fresh) {
           log(`? "${friendlyFileTypeLabel(type)}" field was re-rendered by the page ? recovered a matching field and retrying`, 'warn');
@@ -1173,7 +1188,11 @@
       const errorWatch = watchUploadErrors(element, fileRecords.map(record => record.name));
       let attachResult = null;
       const pageReaction = observeUploadPageReaction(element, fileRecords.map(record => record.name));
-      const outcome = root.SFFAFileUploader.assignFilesToInput(element, fileRecords);
+      // Drag-and-drop-only areas have no file input: the files are dropped on the area instead.
+      const outcome = field.dropZone
+        ? root.SFFAFileUploader.dropFilesOnZone(element, fileRecords, multiple)
+        : root.SFFAFileUploader.assignFilesToInput(element, fileRecords);
+      if (field.dropZone && outcome.success) log(`Dropped ${outcome.attached} file(s) on the drag-and-drop area "${fieldName}"`, 'info');
       // A card filled through its own button shares one hidden input with other cards: remember the
       // button (so the next card still gets its file) and the input (so it is never filled on its own).
       if (outcome.success) {

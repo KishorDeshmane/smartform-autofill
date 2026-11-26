@@ -1200,8 +1200,8 @@
       const label = fieldLabel(field);
       current = el;
       if (field.replacesExisting) continue; // left alone on purpose: it would replace an uploaded document
-      if (field.viaTrigger) {
-        // The shared input holds only the last file; the filler records each card's own result.
+      if (field.viaTrigger || field.dropZone) {
+        // The shared input holds only the last file (and a drop area has none); the filler records each card's own result.
         if (field.attachedOk) recordLegacyOrStatus('pass', label);
         else recordLegacyOrStatus('warn', label, 'a file attached', 'no file attached (map a file of this type, or upload it manually)');
         continue;
